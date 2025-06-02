@@ -1,13 +1,17 @@
 import pygame
 from random import randint
+from math import sqrt
 width = 800
 height = 600
 hero_pos_x = 1
 hero_pos_y = 1
 enemies = []
 spawn_timer = 0
-enemy_spawn_interval = 5000
+enemy_spawn_interval = 1000
+shoot_time = 0
+shoot_rate = 2000
 hero_vel = 0.3
+shoot_vel = 0.5
 
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
     pass
@@ -19,6 +23,21 @@ def spawn_enemy ():
         0.1
     ]
     enemies.append(enemy)
+
+def shoot (inimigoMaisProxX, inimigoMaisProxY):
+    global hero_pos_x, hero_pos_y, shoot_vel
+    posTiroX, posTiroY = hero_pos_x, hero_pos_y
+    tiro = pygame.circle(("#0000ff"),posTiroX,poxTiroY,5)
+    if inimigoMaisProxX > 0:
+        posTiroX += shoot_vel * dt
+    elif inimigoMaisProxX < 0:
+        posTiroX += - (shoot_vel * dt)
+    if inimigoMaisProxY > 0:
+        posTiroY += shoot_vel * dt
+    elif inimigoMaisProxY < 0:
+        posTiroY += - (shoot_vel * dt)
+    return tiro
+
 
 def load():
     global clock, collider_jogador, collider_mapa, sys_font
@@ -71,9 +90,16 @@ def update(dt):
         spawn_enemy()
         spawn_timer = 0
     
+    inimigoMaisProx = 1000
     for enemy in enemies:
         distanciaJxE_X = hero_pos_x - enemy[0]
         distanciaJxE_Y = hero_pos_y - enemy[1]
+        distanciaGeral = sqrt(distanciaJxE_X**2 + distanciaJxE_Y**2)
+
+        if distanciaGeral < inimigoMaisProx:
+            inimigoMaisProxX = distanciaJxE_X
+            inimigoMaisProxY = distanciaJxE_Y
+
         if distanciaJxE_X > 0:
             enemy[0] += (enemy[2]*dt)
         elif distanciaJxE_X < 0:
@@ -92,6 +118,10 @@ def update(dt):
 
         if collider_jogador.colliderect(collider_enemy):
             print('Você morreu')
+    
+    shoot_time += dt
+    if shoot_time >= shoot_rate:
+
 
 
 def draw_screen(screen):
@@ -100,6 +130,8 @@ def draw_screen(screen):
     for enemy in enemies:
         collider_enemy = pygame.Rect(enemy[0], enemy[1], 20,20)
         pygame.draw.rect(screen,("#ff0000"), collider_enemy)
+    collider_tiro = shoot(inimigoMaisProxX, inimigoMaisProxY)
+    pygame.draw.circle(screen,("#0000ff"), collider_tiro)
 
 
 #####################################################
