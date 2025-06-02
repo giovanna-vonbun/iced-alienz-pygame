@@ -1,2 +1,132 @@
-#joguinho
 import pygame
+from random import randint
+width = 800
+height = 600
+hero_pos_x = 1
+hero_pos_y = 1
+enemies = []
+spawn_timer = 0
+enemy_spawn_interval = 5000
+hero_vel = 0.3
+
+def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
+    pass
+
+def spawn_enemy ():
+    enemy = [
+        randint(0,800),
+        randint(0,600),
+        0.1
+    ]
+    enemies.append(enemy)
+
+def load():
+    global clock, collider_jogador, collider_mapa, sys_font
+    clock = pygame.time.Clock() 
+    collider_mapa = [
+        pygame.Rect(0,0,-10,600),
+        pygame.Rect(0,0,800,-10),
+        pygame.Rect(800,0,810,600),
+        pygame.Rect(0, 600, 800, 610)
+    ]
+
+def update(dt):
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval
+    old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
+    keys = pygame.key.get_pressed()
+    qtdTeclasApertadas = 0
+    collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
+
+    if keys[pygame.K_RIGHT]:
+        hero_pos_x += (hero_vel * dt)
+        qtdTeclasApertadas += 1
+        if hero_pos_x > 768:
+            hero_pos_x = old_hero_pos_x    
+
+    if keys[pygame.K_LEFT]:
+        hero_pos_x += - (hero_vel * dt)
+        qtdTeclasApertadas += 1
+        if hero_pos_x < 0:
+            hero_pos_x = old_hero_pos_x
+
+    if keys[pygame.K_UP]:
+        hero_pos_y += - (hero_vel * dt)
+        qtdTeclasApertadas += 1
+        if hero_pos_y < 0:
+            hero_pos_y = old_hero_pos_y    
+
+    if keys[pygame.K_DOWN]:
+        hero_pos_y += (hero_vel * dt)
+        qtdTeclasApertadas += 1
+        if hero_pos_y > 568:
+            hero_pos_y = old_hero_pos_y
+    
+    if qtdTeclasApertadas > 1:
+        hero_vel = 0.3 / 2 ** (1/2)
+    if qtdTeclasApertadas == 1:
+        hero_vel = 0.3
+    
+    spawn_timer += dt
+    if spawn_timer >= enemy_spawn_interval:
+        spawn_enemy()
+        spawn_timer = 0
+    
+    print(enemies)
+    for enemy in enemies:
+        distanciaJxE_X = hero_pos_x - enemy[0]
+        distanciaJxE_Y = hero_pos_y - enemy[1]
+        if distanciaJxE_X > 0:
+            enemy[0] += (enemy[2]*dt)
+        elif distanciaJxE_X < 0:
+            enemy[0] -= (enemy[2]*dt)
+        else:
+            enemy[0] = enemy[0]
+        
+        if distanciaJxE_Y > 0:
+            enemy[1] += (enemy[2]*dt)
+        elif distanciaJxE_Y < 0:
+            enemy[1] -= (enemy[2]*dt)
+        else:
+            enemy[1] = enemy[1]
+
+        """if collider_jogador.colliderect(enemy[3]):
+            print('Você morreu')"""
+
+
+def draw_screen(screen):
+    screen.fill((0,0,0))
+    pygame.draw.rect(screen,("#00ff00"), collider_jogador)
+    for enemy in enemies:
+        collider_enemy = pygame.Rect(enemy[0], enemy[1], 20,20)
+        pygame.draw.rect(screen,("#ff0000"), collider_enemy)
+
+
+#####################################################
+# A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
+#####################################################
+def main_loop(screen):  
+    global clock
+    running_right = True
+    while running_right:
+        for e in pygame.event.get(): 
+            if e.type == pygame.QUIT: # fechamento do prog
+                running_right = False
+                break
+
+        # Define FPS máximo
+        clock.tick(60)
+        # Tempo transcorrido desde a última atualização 
+        dt = clock.get_time()
+        # Atualiza posição dos objetos
+        update(dt)
+        # Desenha objetos
+        draw_screen(screen)
+        # Pygame atualiza a visualização da tela
+        pygame.display.update()
+
+# Programa principal
+pygame.init()
+screen = pygame.display.set_mode((width, height))
+load()
+main_loop(screen)
+pygame.quit()
