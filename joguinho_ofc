@@ -71,7 +71,6 @@ def update(dt):
         spawn_enemy()
         spawn_timer = 0
     
-    print(enemies)
     for enemy in enemies:
         distanciaJxE_X = hero_pos_x - enemy[0]
         distanciaJxE_Y = hero_pos_y - enemy[1]
