@@ -88,8 +88,10 @@ def update(dt):
         else:
             enemy[1] = enemy[1]
 
-        """if collider_jogador.colliderect(enemy[3]):
-            print('Você morreu')"""
+        collider_enemy = pygame.Rect(enemy[0], enemy[1], 20,20)
+
+        if collider_jogador.colliderect(collider_enemy):
+            print('Você morreu')
 
 
 def draw_screen(screen):
