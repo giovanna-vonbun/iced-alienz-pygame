@@ -11,32 +11,35 @@ enemy_spawn_interval = 1000
 shoot_time = 0
 shoot_rate = 2000
 hero_vel = 0.3
-shoot_vel = 0.5
+shoot_velX = 0.3
+shoot_velY = 0.3
 
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
     pass
 
 def spawn_enemy ():
-    enemy = [
-        randint(0,800),
-        randint(0,600),
-        0.1
-    ]
+    enemy = {
+        "posX":randint(0,800),
+        "posY":randint(0,600),
+        "vel":0.1
+    }
     enemies.append(enemy)
 
+def irAteXY (posX_saida,posY_saida, posX_chegada,posY_chegada):
+    global shoot_velX, shoot_velY
+    dX = posX_saida-posX_chegada
+    dY = posY_saida-posY_chegada
+    distancia = sqrt((dX)**2 + (dY)**2)
+    shoot_velX = shoot_velX * dX/distancia
+    shoot_velY = shoot_velY * dY/distancia
+
 def shoot (inimigoMaisProxX, inimigoMaisProxY):
-    global hero_pos_x, hero_pos_y, shoot_vel
+    global hero_pos_x, hero_pos_y
     posTiroX, posTiroY = hero_pos_x, hero_pos_y
-    tiro = pygame.circle(("#0000ff"),posTiroX,poxTiroY,5)
-    if inimigoMaisProxX > 0:
-        posTiroX += shoot_vel * dt
-    elif inimigoMaisProxX < 0:
-        posTiroX += - (shoot_vel * dt)
-    if inimigoMaisProxY > 0:
-        posTiroY += shoot_vel * dt
-    elif inimigoMaisProxY < 0:
-        posTiroY += - (shoot_vel * dt)
-    return tiro
+    posTiroX = posTiroX + dt*shoot_velX
+    posTiroY = posTiroY + dt*shoot_velY
+        
+
 
 
 def load():
@@ -50,7 +53,7 @@ def load():
     ]
 
 def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
     qtdTeclasApertadas = 0
@@ -92,46 +95,45 @@ def update(dt):
     
     inimigoMaisProx = 1000
     for enemy in enemies:
-        distanciaJxE_X = hero_pos_x - enemy[0]
-        distanciaJxE_Y = hero_pos_y - enemy[1]
+        distanciaJxE_X = hero_pos_x - enemy['posX']
+        distanciaJxE_Y = hero_pos_y - enemy['posY']
         distanciaGeral = sqrt(distanciaJxE_X**2 + distanciaJxE_Y**2)
 
         if distanciaGeral < inimigoMaisProx:
             inimigoMaisProxX = distanciaJxE_X
             inimigoMaisProxY = distanciaJxE_Y
+            inimigoMaisProx = distanciaGeral
 
         if distanciaJxE_X > 0:
-            enemy[0] += (enemy[2]*dt)
+            enemy['posX'] += (enemy['vel']*dt)
         elif distanciaJxE_X < 0:
-            enemy[0] -= (enemy[2]*dt)
+            enemy['posX'] -= (enemy['vel']*dt)
         else:
-            enemy[0] = enemy[0]
+            enemy['posX'] = enemy['posX']
         
         if distanciaJxE_Y > 0:
-            enemy[1] += (enemy[2]*dt)
+            enemy['posY'] += (enemy['vel']*dt)
         elif distanciaJxE_Y < 0:
-            enemy[1] -= (enemy[2]*dt)
+            enemy['posY'] -= (enemy['vel']*dt)
         else:
-            enemy[1] = enemy[1]
+            enemy['posY'] = enemy['posY']
 
-        collider_enemy = pygame.Rect(enemy[0], enemy[1], 20,20)
+        collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
 
         if collider_jogador.colliderect(collider_enemy):
             print('Você morreu')
     
     shoot_time += dt
     if shoot_time >= shoot_rate:
-
+        shoot
 
 
 def draw_screen(screen):
     screen.fill((0,0,0))
     pygame.draw.rect(screen,("#00ff00"), collider_jogador)
     for enemy in enemies:
-        collider_enemy = pygame.Rect(enemy[0], enemy[1], 20,20)
+        collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
         pygame.draw.rect(screen,("#ff0000"), collider_enemy)
-    collider_tiro = shoot(inimigoMaisProxX, inimigoMaisProxY)
-    pygame.draw.circle(screen,("#0000ff"), collider_tiro)
 
 
 #####################################################
