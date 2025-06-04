@@ -5,15 +5,15 @@ width = 800
 height = 600
 hero_pos_x = 1
 hero_pos_y = 1
+hero_vel = 0.3
 enemies = []
 spawn_timer = 0
 enemy_spawn_interval = 1000
+projectiles = []
 shoot_time = 0
-shoot_rate = 2000
-hero_vel = 0.3
-shoot_velX = 0.3
-shoot_velY = 0.3
+shoot_rate = 500
 morte = False
+
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
     pass
 
@@ -25,22 +25,23 @@ def spawn_enemy ():
     }
     enemies.append(enemy)
 
-def irAteXY (posX_saida,posY_saida, posX_chegada,posY_chegada):
-    global shoot_velX, shoot_velY
-    dX = posX_saida-posX_chegada
-    dY = posY_saida-posY_chegada
-    distancia = sqrt((dX)**2 + (dY)**2)
-    shoot_velX = shoot_velX * dX/distancia
-    shoot_velY = shoot_velY * dY/distancia
+def shoot(dx, dy):
+    global hero_pos_x, hero_pos_y, projectiles
+    distancia = sqrt(dx**2 + dy**2)
 
-def shoot (inimigoMaisProxX, inimigoMaisProxY):
-    global hero_pos_x, hero_pos_y
-    posTiroX, posTiroY = hero_pos_x, hero_pos_y
-    posTiroX = posTiroX + dt*shoot_velX
-    posTiroY = posTiroY + dt*shoot_velY
-        
+    tiro = {
+        "x": hero_pos_x + 16,
+        "y": hero_pos_y + 16,
+        "vel": 2,
+        "alvo": None  # será preenchido com o inimigo mais próximo
+    }
 
+    # Define o alvo mais próximo:
+    if enemies:
+        inimigoMaisProx = min(enemies, key=lambda e: sqrt((e['posX'] - hero_pos_x) ** 2 + (e['posY'] - hero_pos_y) ** 2))
+        tiro["alvo"] = inimigoMaisProx
 
+    projectiles.append(tiro)
 
 def load():
     global clock, collider_jogador, collider_mapa, sys_font
@@ -94,28 +95,28 @@ def update(dt):
         spawn_enemy()
         spawn_timer = 0
     
-    inimigoMaisProx = 1000
+    inimigoMaisProx = None
+    distMenor = float('inf')
     for enemy in enemies:
-        distanciaJxE_X = hero_pos_x - enemy['posX']
-        distanciaJxE_Y = hero_pos_y - enemy['posY']
+        distanciaJxE_X = enemy['posX'] - hero_pos_x
+        distanciaJxE_Y = enemy['posY'] - hero_pos_y
         distanciaGeral = sqrt(distanciaJxE_X**2 + distanciaJxE_Y**2)
 
-        if distanciaGeral < inimigoMaisProx:
-            inimigoMaisProxX = distanciaJxE_X
-            inimigoMaisProxY = distanciaJxE_Y
-            inimigoMaisProx = distanciaGeral
+        if distanciaGeral < distMenor:
+            distMenor = distanciaGeral
+            inimigoMaisProx = enemy
 
-        if distanciaJxE_X > 0:
-            enemy['posX'] += (enemy['vel']*dt)
-        elif distanciaJxE_X < 0:
+        if enemy['posX'] > hero_pos_x:
             enemy['posX'] -= (enemy['vel']*dt)
+        elif enemy['posX'] < hero_pos_x:
+            enemy['posX'] += (enemy['vel']*dt)
         else:
             enemy['posX'] = enemy['posX']
         
-        if distanciaJxE_Y > 0:
-            enemy['posY'] += (enemy['vel']*dt)
-        elif distanciaJxE_Y < 0:
+        if enemy['posY'] > hero_pos_y:
             enemy['posY'] -= (enemy['vel']*dt)
+        elif enemy['posY'] < hero_pos_y:
+            enemy['posY'] += (enemy['vel']*dt)
         else:
             enemy['posY'] = enemy['posY']
 
@@ -125,9 +126,32 @@ def update(dt):
             morte = True
     
     shoot_time += dt
-    if shoot_time >= shoot_rate:
-        shoot
+    if shoot_time >= shoot_rate and inimigoMaisProx:
+        dx = inimigoMaisProx["posX"] - hero_pos_x
+        dy = inimigoMaisProx["posY"] - hero_pos_y
+        shoot(dx, dy)
+        shoot_time = 0
+        
+    for tiro in projectiles[:]:
+         alvo = tiro["alvo"]
+         if alvo not in enemies:
+            projectiles.remove(tiro)
+            continue
 
+         dx = alvo['posX'] - tiro['x']
+         dy = alvo['posY'] - tiro['y']
+         dist = sqrt(dx**2 + dy**2)
+
+         if dist != 0:
+             tiro['x'] += (tiro['vel'] * dx / dist) * dt
+             tiro['y'] += (tiro['vel'] * dy / dist) * dt
+
+         # Checa colisão
+         tiro_rect = pygame.Rect(tiro["x"], tiro["y"], 5, 5)
+         alvo_rect = pygame.Rect(alvo["posX"], alvo["posY"], 20, 20)
+         if tiro_rect.colliderect(alvo_rect):
+            enemies.remove(alvo)
+            projectiles.remove(tiro)
 
 def draw_screen(screen):
     screen.fill((0,0,0))
@@ -136,9 +160,11 @@ def draw_screen(screen):
     for enemy in enemies:
         collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
         pygame.draw.rect(screen,("#ff0000"), collider_enemy)
-        if morte == True:
-            texto = fonte.render('VOCÊ MORREU!', True, "#D51B1B")
-            screen.blit(texto, (120, 250))
+    if morte == True:
+        texto = fonte.render('VOCÊ MORREU!', True, "#D51B1B")
+        screen.blit(texto, (120, 250))
+    for tiro in projectiles:
+        pygame.draw.rect(screen, "#ffffff", pygame.Rect(tiro["x"], tiro["y"], 5, 5))
 
 #####################################################
 # A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
