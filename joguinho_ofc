@@ -14,6 +14,8 @@ shoot_time = 0
 shoot_rate = 2000
 tempo = 0
 morte = False
+vida = 5
+inimigosMortos = 0
 
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
     pass
@@ -37,7 +39,6 @@ def spawn_enemy ():
 
 def shoot(dx, dy):
     global hero_pos_x, hero_pos_y, projectiles
-    distancia = sqrt(dx**2 + dy**2)
 
     tiro = {
         "x": hero_pos_x + 16,
@@ -64,7 +65,7 @@ def load():
     ]
 
 def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, morte, tempo, cronometro
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, morte, tempo, cronometro, inimigosMortos
 
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
@@ -151,8 +152,6 @@ def update(dt):
         cronometro = f'0{int(tempo//60)}:{int(tempo%60//10)}{int(tempo%60%10)}'
     elif tempo < 6000:
         cronometro = f'{int(tempo//60)}:{int(tempo%60//10)}{int(tempo%60%10)}'
-    print(tempo)
-    print(cronometro)
 
     for tiro in projectiles[:]:
          alvo = tiro["alvo"]
@@ -172,6 +171,7 @@ def update(dt):
          tiro_rect = pygame.Rect(tiro["x"], tiro["y"], 5, 5)
          alvo_rect = pygame.Rect(alvo["posX"], alvo["posY"], 20, 20)
          if tiro_rect.colliderect(alvo_rect):
+            inimigosMortos += 1
             enemies.remove(alvo)
             projectiles.remove(tiro)
 
@@ -187,10 +187,14 @@ def draw_screen(screen):
             pygame.draw.rect(screen,("#ff0000"), collider_enemy)
         for tiro in projectiles:
             pygame.draw.rect(screen, "#ffffff", pygame.Rect(tiro["x"], tiro["y"], 5, 5))
+        fonteKillCount = pygame.font.SysFont(None,20)
+        killCountTxt = fonteKillCount.render(f'Inimigos Mortos: {inimigosMortos}', True, '#ffffff')
+        screen.blit(killCountTxt, (670,0))
     else:
         fonteMorte = pygame.font.SysFont(None, 100)
         texto = fonteMorte.render('VOCÊ MORREU!', True, "#D51B1B")
         screen.blit(texto, (120, 250))
+
 #####################################################
 # A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
 #####################################################
