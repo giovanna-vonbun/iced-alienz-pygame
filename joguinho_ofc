@@ -13,8 +13,11 @@ projectiles = []
 shoot_time = 0
 shoot_rate = 2000
 tempo = 0
-morte = False
-vida = 5
+death = False
+invencible = False
+invencible_actualTime = 0
+invencible_lengt = 1000
+life = 6
 inimigosMortos = 0
 
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
@@ -43,7 +46,7 @@ def shoot(dx, dy):
     tiro = {
         "x": hero_pos_x + 16,
         "y": hero_pos_y + 16,
-        "vel": 2,
+        "vel": 1,
         "alvo": None  # será preenchido com o inimigo mais próximo
     }
 
@@ -55,7 +58,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, sys_font
+    global clock, collider_jogador, collider_mapa, coracao
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -63,9 +66,10 @@ def load():
         pygame.Rect(800,0,810,600),
         pygame.Rect(0, 600, 800, 610)
     ]
+    coracao = pygame.image.load('coracao.png')
 
 def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, morte, tempo, cronometro, inimigosMortos
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, death, tempo, cronometro, inimigosMortos, life, invencible_actualTime, invencible
 
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
@@ -133,8 +137,12 @@ def update(dt):
 
         collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
 
-        if collider_jogador.colliderect(collider_enemy):
-            morte = True
+        if collider_jogador.colliderect(collider_enemy) and not invencible:
+            life -= 1
+            invencible = True
+            invencible_actualTime = 0
+            if life == 0:
+                death = True
     
     shoot_time += dt
     if shoot_time >= shoot_rate and inimigoMaisProx:
@@ -174,10 +182,16 @@ def update(dt):
             inimigosMortos += 1
             enemies.remove(alvo)
             projectiles.remove(tiro)
+    
+    if invencible:
+        invencible_actualTime += dt
+        if invencible_actualTime>= invencible_lengt:
+            invencible = False
+            invencible_actualTime = 0
 
 def draw_screen(screen):
     screen.fill((0,0,0))
-    if not morte:
+    if not death:
         pygame.draw.rect(screen,("#00ff00"), collider_jogador)
         fonteCronometro = pygame.font.SysFont(None, 25)
         cronometroTxt = fonteCronometro.render(cronometro, True, '#ffffff')
@@ -190,9 +204,19 @@ def draw_screen(screen):
         fonteKillCount = pygame.font.SysFont(None,20)
         killCountTxt = fonteKillCount.render(f'Inimigos Mortos: {inimigosMortos}', True, '#ffffff')
         screen.blit(killCountTxt, (670,0))
+        x = 0
+        for i in range (life):
+            if i % 2 == 0:
+                screen.blit(coracao, (x,0))
+            else:
+                screen.blit(pygame.transform.flip(coracao, True,False),(x,0))
+                x += 5
+            x += 13
+            
+            
     else:
-        fonteMorte = pygame.font.SysFont(None, 100)
-        texto = fonteMorte.render('VOCÊ MORREU!', True, "#D51B1B")
+        fontedeath = pygame.font.SysFont(None, 100)
+        texto = fontedeath.render('VOCÊ MORREU!', True, "#D51B1B")
         screen.blit(texto, (120, 250))
 
 #####################################################
