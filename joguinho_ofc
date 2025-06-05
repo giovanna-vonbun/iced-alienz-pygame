@@ -11,7 +11,6 @@ spawn_timer = 0
 enemy_spawn_interval = 1000
 projectiles = []
 shoot_time = 0
-<<<<<<< HEAD
 shoot_rate = 2000
 time = 0
 death = False
@@ -29,23 +28,10 @@ weapons = [
    #['Tiro Órbita',0],
     ['Vida']
 ]
-=======
-shoot_rate = 2000
-time = 0
-death = False
-invencible = False
-invencible_actualTime = 0
-invencible_lengt = 1000
-life = 6
-enemyDeathCount = 0
-nivel = 1
-xp = 0
->>>>>>> bf65cbe41e67ad37d35a47b8c3b92cd7ade07cb9
 
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
     pass
 
-<<<<<<< HEAD
 def selecionaArma ():
     global shoot_rate, life
     novaArma = choice(weapons)
@@ -79,30 +65,6 @@ def ganhar_xp(valor):
         paused = True
         xp_necessario = escalonamentoXp(nivel + 1)
     
-=======
-def escalonamentoXp (nivel):
-    if nivel == 1:
-        return 5
-    if nivel == 20:
-        return 600 + escalonamentoXp(nivel-1)
-    if nivel == 40:
-        return 2600 + escalonamentoXp(nivel-1)
-    return 10 + escalonamentoXp (nivel-1)
-
-xp_necessario = escalonamentoXp(nivel+1)
-
-def ganhar_xp(valor):
-    global xp, nivel, xp_necessario
-
-    xp += valor
-
-    # Verifica se subiu de nível
-    while xp >= xp_necessario:
-        nivel += 1
-        print(f"Subiu para o nível {nivel}!")
-        xp_necessario = escalonamentoXp(nivel + 1)
-    
->>>>>>> bf65cbe41e67ad37d35a47b8c3b92cd7ade07cb9
 def spawn_enemy ():
     global hero_pos_x, hero_pos_y
     min_distancia = 300  # distância mínima do jogador
@@ -126,23 +88,14 @@ def spawn_enemy ():
             break
 
 def shoot(dx, dy):
-<<<<<<< HEAD
     global hero_pos_x, hero_pos_y, projectiles, penetracao
-=======
-    global hero_pos_x, hero_pos_y, projectiles
->>>>>>> bf65cbe41e67ad37d35a47b8c3b92cd7ade07cb9
 
     tiro = {
         "x": hero_pos_x + 16,
         "y": hero_pos_y + 16,
-<<<<<<< HEAD
         "vel": 1,
         "alvo": None,  # será preenchido com o inimigo mais próximo
         "pen_rest": penetracao
-=======
-        "vel": 1,
-        "alvo": None  # será preenchido com o inimigo mais próximo
->>>>>>> bf65cbe41e67ad37d35a47b8c3b92cd7ade07cb9
     }
 
     # Define o alvo mais próximo:
@@ -164,11 +117,7 @@ def load():
     coracao = pygame.image.load('coracao.png')
 
 def update(dt):
-<<<<<<< HEAD
     global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, death, time, cronometro, enemyDeathCount, life, invencible_actualTime, invencible, paused, penetracao
-=======
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, death, time, cronometro, enemyDeathCount, life, invencible_actualTime, invencible, qtdXP
->>>>>>> bf65cbe41e67ad37d35a47b8c3b92cd7ade07cb9
 
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
@@ -281,7 +230,6 @@ def update(dt):
             enemyDeathCount += 1
             ganhar_xp(1)
             enemies.remove(alvo)
-<<<<<<< HEAD
             tiro['pen_rest'] -= 1
             if tiro['pen_rest'] <= 0:
                 projectiles.remove(tiro)        # acabou a penetração
@@ -302,19 +250,8 @@ def update(dt):
             invencible = False
             invencible_actualTime = 0
             
-=======
-            projectiles.remove(tiro)
-    
-    if invencible:
-        invencible_actualTime += dt
-        if invencible_actualTime>= invencible_lengt:
-            invencible = False
-            invencible_actualTime = 0
-            
->>>>>>> bf65cbe41e67ad37d35a47b8c3b92cd7ade07cb9
 def draw_screen(screen):
     screen.fill((0,0,0))
-<<<<<<< HEAD
     if not death:
         pygame.draw.rect(screen,("#00ff00"), collider_jogador)
         fonteCronometro = pygame.font.SysFont(None, 25)
@@ -344,37 +281,6 @@ def draw_screen(screen):
     else:
         fontedeath = pygame.font.SysFont(None, 100)
         texto = fontedeath.render('VOCÊ MORREU!', True, "#D51B1B")
-=======
-    if not death:
-        pygame.draw.rect(screen,("#00ff00"), collider_jogador)
-        fonteCronometro = pygame.font.SysFont(None, 25)
-        cronometroTxt = fonteCronometro.render(cronometro, True, '#ffffff')
-        screen.blit(cronometroTxt, (370,0))
-        for enemy in enemies:
-            collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
-            pygame.draw.rect(screen,("#ff0000"), collider_enemy)
-        for tiro in projectiles:
-            pygame.draw.rect(screen, "#ffffff", pygame.Rect(tiro["x"], tiro["y"], 5, 5))
-        fonteKillCount = pygame.font.SysFont(None,20)
-        killCountTxt = fonteKillCount.render(f'Inimigos Mortos: {enemyDeathCount}', True, '#ffffff')
-        screen.blit(killCountTxt, (670,0))
-        fonteXP = pygame.font.SysFont(None, 20)
-        xpTxt = fonteXP.render(f'Nível: {nivel} | XP: {xp}/{xp_necessario}', True, '#ffffff')
-        screen.blit(xpTxt, (10, 580))
-        x = 0
-        for i in range (life):
-            if i % 2 == 0:
-                screen.blit(coracao, (x,0))
-            else:
-                screen.blit(pygame.transform.flip(coracao, True,False),(x,0))
-                x += 5
-            x += 13
-            
-            
-    else:
-        fontedeath = pygame.font.SysFont(None, 100)
-        texto = fontedeath.render('VOCÊ MORREU!', True, "#D51B1B")
->>>>>>> bf65cbe41e67ad37d35a47b8c3b92cd7ade07cb9
         screen.blit(texto, (120, 250))
 
 def draw_pause_overlay(screen):
