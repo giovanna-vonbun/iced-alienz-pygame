@@ -1,6 +1,6 @@
 import pygame
-from random import randint, choice
-from math import sqrt
+from random import randint, sample
+from math import sqrt, pi, cos, sin
 width = 800
 height = 600
 hero_pos_x = 1
@@ -10,8 +10,11 @@ enemies = []
 spawn_timer = 0
 enemy_spawn_interval = 1000
 projectiles = []
+orbitals       = []   # projéteis que orbitam o herói
+orbital_level  = 0    # quantas balas na órbita
 shoot_time = 0
 shoot_rate = 2000
+shoot_damage = 1
 time = 0
 death = False
 InvencibleP = False
@@ -24,26 +27,53 @@ enemyDeathCount = 0
 nivel = 1
 xp = 0
 bounce = 1
+opcoes_sorteadas = []
+escolhendo_habilidade = False
 weapons = [
-    ['Tiro Base', 1],
-   #['Tiro Órbita',0],
+    ['Velocidade Tiro', 1], 
+    ['Tiro Órbita',0],
     ['Vida', 0],
-    ['Bounce', 0]
+    ['Bounce', 0],
+    ['Dano Tiro', 0],
+    ['Velocidade', 0]
 ]
+
 
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
     pass
 
-def selecionaArma ():
-    global shoot_rate, life, bounce
-    novaArma = choice(weapons)
-    if novaArma[0] == 'Tiro Base':
-        shoot_rate -= 250
-    elif novaArma[0] == 'Vida':
+def rebuild_orbitals():
+    """Reconstrói o anel de balas conforme orbital_level."""
+    global orbitals
+    orbitals = []
+    if orbital_level == 0:
+        return
+    passo = 2*pi / orbital_level
+    for i in range(orbital_level):
+        orbitals.append({
+            "angle" : i*passo,
+            "speed" : 0.003,        # rad/ms
+            "radius": 100 + 4*orbital_level,  # raio aumenta um pouco a cada nível
+            "size"  : 6,
+            "damage": shoot_damage   # usa mesmo dano base
+        })
+
+def selecionaArma (arma):
+    global shoot_rate, life, bounce, shoot_damage, orbital_level, hero_vel
+    if arma[0] == 'Tiro Base':
+        shoot_rate -= max(100, shoot_rate - 250)
+    elif arma[0] == 'Vida':
         life += 2
-    elif novaArma[0] == 'Bounce':
+    elif arma[0] == 'Bounce':
         bounce += 1
-    novaArma[1] += 1
+    elif arma[0] == 'Dano Tiro':
+        shoot_damage += 1
+    elif arma[0] == 'Tiro Órbita':
+        orbital_level += 1
+        rebuild_orbitals()
+    elif arma[0] == 'Velocidade':
+        hero_vel += 0.05
+    arma[1] += 1
 
 def escalonamentoXp (nivel):
     if nivel == 2:
@@ -57,20 +87,23 @@ def escalonamentoXp (nivel):
 xp_necessario = escalonamentoXp(nivel+1)
 
 def ganhar_xp(valor):
-    global xp, nivel, xp_necessario, paused
+    global xp, nivel, xp_necessario, paused, enemy_spawn_interval
+    global opcoes_sorteadas, escolhendo_habilidade
 
     xp += valor
-
-    # Verifica se subiu de nível
-    if xp == xp_necessario:
+    if xp >= xp_necessario:
         nivel += 1
         xp = 0
-        selecionaArma()
         paused = True
+        escolhendo_habilidade = True
+        # Sorteia 3 opções únicas
+        opcoes_sorteadas = sample(weapons, k=3)
+        if enemy_spawn_interval > 600:
+            enemy_spawn_interval -= (nivel // 4) ** 2
         xp_necessario = escalonamentoXp(nivel + 1)
     
 def spawn_enemy ():
-    global hero_pos_x, hero_pos_y,time
+    global hero_pos_x, hero_pos_y,time, vidaInimigo
     min_distancia = 300  # distância mínima do jogador
     max_tentativas = 20  # evita loop infinito
     vidaInimigo = 1 + (time*1/60//1)
@@ -119,7 +152,7 @@ def load():
         pygame.Rect(0,0,-10,600),
         pygame.Rect(0,0,800,-10),
         pygame.Rect(800,0,810,600),
-        pygame.Rect(0, 600, 800, 610)
+        pygame.Rect(0,600,800,610)
     ]
     coracao = pygame.image.load('coracao.png')
 
@@ -131,25 +164,25 @@ def update(dt):
     qtdTeclasApertadas = 0
     collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
 
-    if keys[pygame.K_RIGHT]:
+    if keys[pygame.K_d]:
         hero_pos_x += (hero_vel * dt)
         qtdTeclasApertadas += 1
         if hero_pos_x > 768:
             hero_pos_x = old_hero_pos_x    
 
-    if keys[pygame.K_LEFT]:
+    if keys[pygame.K_a]:
         hero_pos_x += - (hero_vel * dt)
         qtdTeclasApertadas += 1
         if hero_pos_x < 0:
             hero_pos_x = old_hero_pos_x
 
-    if keys[pygame.K_UP]:
+    if keys[pygame.K_w]:
         hero_pos_y += - (hero_vel * dt)
         qtdTeclasApertadas += 1
         if hero_pos_y < 0:
             hero_pos_y = old_hero_pos_y    
 
-    if keys[pygame.K_DOWN]:
+    if keys[pygame.K_s]:
         hero_pos_y += (hero_vel * dt)
         qtdTeclasApertadas += 1
         if hero_pos_y > 568:
@@ -159,7 +192,7 @@ def update(dt):
         hero_vel = 0.3 / 2 ** (1/2)
     if qtdTeclasApertadas == 1:
         hero_vel = 0.3
-    
+        
     spawn_timer += dt
     if spawn_timer >= enemy_spawn_interval:
         spawn_enemy()
@@ -242,7 +275,7 @@ def update(dt):
          alvo_rect = pygame.Rect(alvo["posX"], alvo["posY"], 20, 20)
          if tiro_rect.colliderect(alvo_rect):
             if not alvo['invencibility']:
-                alvo['life'] -= 1
+                alvo['life'] -= shoot_damage
                 alvo['invencibility'] = True
                 alvo['invencibility_actualTime'] = 0
                 tiro['bounc_rest'] -= 1
@@ -269,7 +302,7 @@ def update(dt):
 
                 if tiro['alvo']['life'] <= 0:
                     enemyDeathCount += 1
-                    ganhar_xp(1)
+                    ganhar_xp(vidaInimigo)
                     enemies.remove(alvo)
             else:
                 # inimigo ainda está invencível, não faz nada nesse frame
@@ -280,6 +313,32 @@ def update(dt):
         if InvencibleP_actualTime>= InvencibleP_lengt:
             InvencibleP = False
             InvencibleP_actualTime = 0
+    
+    for orb in orbitals:
+        # avança ângulo
+        orb["angle"] += orb["speed"] * dt
+        # mantém ângulo na faixa 0..2π para evitar overflow
+        if orb["angle"] > 6.283:
+            orb["angle"] -= 6.283
+
+        # posição relativa ao jogador
+        cx = hero_pos_x + 16 + orb["radius"] * cos(orb["angle"])
+        cy = hero_pos_y + 16 + orb["radius"] * sin(orb["angle"])
+
+        orb_rect = pygame.Rect(cx - orb["size"]//2, cy - orb["size"]//2,
+                            orb["size"], orb["size"])
+
+        # colisão com inimigos (sem destruir a bala)
+        for enemy in enemies[:]:
+            enemy_rect = pygame.Rect(enemy['posX'], enemy['posY'], 20, 20)
+            if orb_rect.colliderect(enemy_rect) and not enemy['invencibility']:
+                enemy['life'] -= orb["damage"]
+                enemy['invencibility'] = True
+                enemy['invencibility_actualTime'] = 0
+                if enemy['life'] <= 0:
+                    enemyDeathCount += 1
+                    ganhar_xp(vidaInimigo)
+                    enemies.remove(enemy)
             
 def draw_screen(screen):
     screen.fill((0,0,0))
@@ -293,9 +352,17 @@ def draw_screen(screen):
             pygame.draw.rect(screen,("#ff0000"), collider_enemy)
         for tiro in projectiles:
             pygame.draw.rect(screen, "#ffffff", pygame.Rect(tiro["x"], tiro["y"], 5, 5))
+        for orb in orbitals:
+            cx = hero_pos_x + 16 + orb["radius"] * cos(orb["angle"])
+            cy = hero_pos_y + 16 + orb["radius"] * sin(orb["angle"])
+            pygame.draw.rect(screen, "#ffff00",
+                            pygame.Rect(cx - orb["size"]//2,
+                                        cy - orb["size"]//2,
+                                        orb["size"], orb["size"]))
         fonteKillCount = pygame.font.SysFont(None,20)
         killCountTxt = fonteKillCount.render(f'Inimigos Mortos: {enemyDeathCount}', True, '#ffffff')
         screen.blit(killCountTxt, (670,0))
+        pygame.draw.rect(screen,("#222222"),(0,575,800,600))
         pygame.draw.rect(screen,("#0000ff"),(0,575,(xp/xp_necessario*800),600))
         fonteXP = pygame.font.SysFont(None, 20)
         xpTxt = fonteXP.render(f'Nível: {nivel}', True, '#ffffff')
@@ -308,6 +375,12 @@ def draw_screen(screen):
                 screen.blit(pygame.transform.flip(coracao, True,False),(x,0))
                 x += 5
             x += 13
+        if escolhendo_habilidade:
+            font = pygame.font.SysFont(None, 32)
+            for i, arma in enumerate(opcoes_sorteadas):
+                txt = f"{i+1}. {arma[0]} (nível atual: {arma[1]})"
+                rendered = font.render(txt, True, "#ffffff")
+                screen.blit(rendered, (100, 200 + i * 40))
             
     else:
         fontedeath = pygame.font.SysFont(None, 100)
@@ -327,7 +400,7 @@ def draw_pause_overlay(screen):
 # A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
 #####################################################
 def main_loop(screen):  
-    global clock, paused
+    global clock, paused, escolhendo_habilidade
     running_right = True
     while running_right:
         for e in pygame.event.get(): 
@@ -337,6 +410,19 @@ def main_loop(screen):
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:
                     paused = not paused
+                elif escolhendo_habilidade:
+                    if e.key == pygame.K_1:
+                        selecionaArma(opcoes_sorteadas[0])
+                        escolhendo_habilidade = False
+                        paused = False
+                    elif e.key == pygame.K_2:
+                        selecionaArma(opcoes_sorteadas[1])
+                        escolhendo_habilidade = False
+                        paused = False
+                    elif e.key == pygame.K_3:
+                        selecionaArma(opcoes_sorteadas[2])
+                        escolhendo_habilidade = False
+                        paused = False
 
         # Define FPS máximo
         clock.tick(60)
@@ -347,7 +433,7 @@ def main_loop(screen):
             update(dt)
         # Desenha objetos
         draw_screen(screen)
-        if paused and not death:
+        if paused and not death and not escolhendo_habilidade:
             draw_pause_overlay(screen)
         # Pygame atualiza a visualização da tela
         pygame.display.update()
