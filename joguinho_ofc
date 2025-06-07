@@ -12,6 +12,7 @@ enemy_spawn_interval = 1000
 projectiles = []
 orbitals       = []   # projéteis que orbitam o herói
 orbital_level  = 0    # quantas balas na órbita
+collisions = []
 shoot_time = 0
 shoot_rate = 2000
 shoot_damage = 1
@@ -34,8 +35,7 @@ weapons = [
     ['Tiro Órbita',0],
     ['Vida', 0],
     ['Bounce', 0],
-    ['Dano Tiro', 0],
-    ['Velocidade', 0]
+    ['Dano Tiro', 0]
 ]
 
 
@@ -59,7 +59,7 @@ def rebuild_orbitals():
         })
 
 def selecionaArma (arma):
-    global shoot_rate, life, bounce, shoot_damage, orbital_level, hero_vel
+    global shoot_rate, life, bounce, shoot_damage, orbital_level
     if arma[0] == 'Tiro Base':
         shoot_rate -= max(100, shoot_rate - 250)
     elif arma[0] == 'Vida':
@@ -71,8 +71,6 @@ def selecionaArma (arma):
     elif arma[0] == 'Tiro Órbita':
         orbital_level += 1
         rebuild_orbitals()
-    elif arma[0] == 'Velocidade':
-        hero_vel += 0.05
     arma[1] += 1
 
 def escalonamentoXp (nivel):
@@ -157,7 +155,7 @@ def load():
     coracao = pygame.image.load('coracao.png')
 
 def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, death, time, cronometro, enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval, shoot_time, death, time, cronometro, damage_dealed,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce
 
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
@@ -238,7 +236,12 @@ def update(dt):
                 enemy['invencibility'] = False
                 enemy['invencibility_actualTime'] = 0
 
-    
+    for pop in collisions[:]:        # itera sobre cópia para poder remover
+        pop["timer"] -= dt
+        pop["y"] -= 0.03 * dt  
+        if pop["timer"] <= 0:
+            collisions.remove(pop)
+
     shoot_time += dt
     if shoot_time >= shoot_rate and inimigoMaisProx:
         dx = inimigoMaisProx["posX"] - hero_pos_x
@@ -276,6 +279,12 @@ def update(dt):
          if tiro_rect.colliderect(alvo_rect):
             if not alvo['invencibility']:
                 alvo['life'] -= shoot_damage
+                collisions.append({
+                    "dmg"   : shoot_damage,
+                    "x"     : tiro['x'],
+                    "y"     : tiro['y'],
+                    "timer" : 600          # milissegundos que o texto ficará visível
+                })
                 alvo['invencibility'] = True
                 alvo['invencibility_actualTime'] = 0
                 tiro['bounc_rest'] -= 1
@@ -333,6 +342,12 @@ def update(dt):
             enemy_rect = pygame.Rect(enemy['posX'], enemy['posY'], 20, 20)
             if orb_rect.colliderect(enemy_rect) and not enemy['invencibility']:
                 enemy['life'] -= orb["damage"]
+                collisions.append({
+                    "dmg"   : shoot_damage,
+                    "x"     : enemy['posX'],
+                    "y"     : enemy['posY'],
+                    "timer" : 600          # milissegundos que o texto ficará visível
+                })
                 enemy['invencibility'] = True
                 enemy['invencibility_actualTime'] = 0
                 if enemy['life'] <= 0:
@@ -352,6 +367,10 @@ def draw_screen(screen):
             pygame.draw.rect(screen,("#ff0000"), collider_enemy)
         for tiro in projectiles:
             pygame.draw.rect(screen, "#ffffff", pygame.Rect(tiro["x"], tiro["y"], 5, 5))
+        fonteDamage = pygame.font.SysFont(None, 20)
+        for pop in collisions:
+            txt = fonteDamage.render(str(pop["dmg"]), True, "#ffffff")
+            screen.blit(txt, (pop["x"], pop["y"]))
         for orb in orbitals:
             cx = hero_pos_x + 16 + orb["radius"] * cos(orb["angle"])
             cy = hero_pos_y + 16 + orb["radius"] * sin(orb["angle"])
