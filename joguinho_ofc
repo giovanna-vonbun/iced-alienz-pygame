@@ -7,6 +7,9 @@ hero_pos_x = 1
 hero_pos_y = 1
 hero_vel = 0.2
 hero_idle = []
+hero_walking = []
+hero_walking_frame = 0
+hero_walking_time = 0
 moving = False
 hero_idle_frame = 0
 hero_idle_time = 0
@@ -162,7 +165,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao
+    global clock, collider_jogador, collider_mapa, coracao, damage
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -173,9 +176,15 @@ def load():
     coracao = pygame.image.load('coracao.png')
     for i in range(1, 3): #carrega as imagens da animação
         hero_idle.append(pygame.transform.scale(pygame.image.load("pinguimIdle" + str(i) + ".png"),(50,50)))
+    for i in range (1,5):
+        if i == 1 or i == 3:
+            hero_walking.append(pygame.transform.scale(pygame.image.load("pinguimIdle1.png"),(50,50)))
+        else:
+            hero_walking.append(pygame.transform.scale(pygame.image.load("pinguimWalk" + str(i//2) + ".png"),(50,50)))
+    damage = pygame.image.load('damage.png')
 
 def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval,moving,shoot_time, death, time, cronometro,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce, hero_idle_time, hero_idle_frame
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer, enemy_spawn_interval,moving,shoot_time, death, time, cronometro,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame
 
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
@@ -211,9 +220,21 @@ def update(dt):
             hero_pos_y = old_hero_pos_y
     
     if qtdTeclasApertadas > 1:
-        hero_vel = 0.3 / 2 ** (1/2)
+        hero_vel = 0.2 / 2 ** (1/2)
+        hero_walking_time += dt / 2 ** (1/2)
+        if hero_walking_time > 100:
+            hero_walking_frame += 1
+            if hero_walking_frame > 3:
+                hero_walking_frame = 0
+            hero_walking_time = 0
     if qtdTeclasApertadas == 1:
-        hero_vel = 0.3
+        hero_vel = 0.2
+        hero_walking_time += dt
+        if hero_walking_time > 100:
+            hero_walking_frame += 1
+            if hero_walking_frame > 3:
+                hero_walking_frame = 0
+            hero_walking_time = 0
     
     if qtdTeclasApertadas == 0:
         hero_idle_time += dt
@@ -394,20 +415,17 @@ def update(dt):
                     enemies.remove(enemy)
             
 def draw_screen(screen):
-    screen.fill((0,0,0))
+    screen.fill((150,200,250))
     if not death:
         if not moving:
             screen.blit(hero_idle[hero_idle_frame], (hero_pos_x, hero_pos_y))
         else:
-            pygame.draw.rect(screen,("#00ff00"), pygame.Rect(hero_pos_x, hero_pos_y, 32, 32))
-        fonteCronometro = pygame.font.SysFont(None, 30)
-        cronometroTxt = fonteCronometro.render(cronometro, True, '#ffffff')
-        screen.blit(cronometroTxt, (370,0))
+            screen.blit(hero_walking[hero_walking_frame],(hero_pos_x, hero_pos_y))
         for enemy in enemies:
             collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
             pygame.draw.rect(screen,("#ff0000"), collider_enemy)
         for tiro in projectiles:
-            pygame.draw.rect(screen, "#ffff00", pygame.Rect(tiro["x"], tiro["y"], 5, 5))
+            pygame.draw.circle(screen, "#ffffff", (tiro["x"], tiro["y"]), 5)
         fonteDamage = pygame.font.SysFont(None, 20)
         for pop in collisions:
             txt = fonteDamage.render(str(pop["dmg"]), True, "#ffffff")
@@ -415,14 +433,19 @@ def draw_screen(screen):
         for orb in orbitals:
             cx = hero_pos_x + 16 + orb["radius"] * cos(orb["angle"])
             cy = hero_pos_y + 16 + orb["radius"] * sin(orb["angle"])
-            pygame.draw.rect(screen, "#ffff00",
-                            pygame.Rect(cx - orb["size"]//2,
-                                        cy - orb["size"]//2,
-                                        orb["size"], orb["size"]))
+            pygame.draw.circle(screen, "#ffffff",
+                                        (cx - orb["size"]//2,
+                                        cy - orb["size"]//2),
+                                        5)
+        if InvencibleP and InvencibleP_actualTime < 500:
+            screen.blit(damage,(0,0))
+        fonteCronometro = pygame.font.SysFont(None, 30)
+        cronometroTxt = fonteCronometro.render(cronometro, True, '#ffffff')
+        screen.blit(cronometroTxt, (370,0))
         fonteKillCount = pygame.font.SysFont(None,20)
         killCountTxt = fonteKillCount.render(f'Inimigos Mortos: {enemyDeathCount}', True, '#ffffff')
         screen.blit(killCountTxt, (660,0))
-        pygame.draw.rect(screen,("#222222"),(0,575,800,600))
+        pygame.draw.rect(screen,("#999999"),(0,575,800,600))
         pygame.draw.rect(screen,("#0000ff"),(0,575,(xp/xp_necessario*800),600))
         fonteXP = pygame.font.SysFont(None, 20)
         xpTxt = fonteXP.render(f'Nível: {nivel}', True, '#ffffff')
@@ -450,8 +473,9 @@ def draw_screen(screen):
                 screen.blit(rendered, (100, 200 + i * 40))
             
     else:
+        screen.blit(damage,(0,0))
         fontedeath = pygame.font.SysFont(None, 100)
-        texto = fontedeath.render('VOCÊ MORREU!', True, "#D51B1B")
+        texto = fontedeath.render('VOCÊ MORREU!', True, "#271BD5")
         screen.blit(texto, (120, 250))
         fonteEnemies = pygame.font.SysFont(None, 25)
         textoEnemies2 = fonteEnemies.render(f'Inimigos eliminados: {enemyDeathCount}', True, "#ffffff")
