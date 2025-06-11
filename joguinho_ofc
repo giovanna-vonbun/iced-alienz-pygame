@@ -27,23 +27,27 @@ shoot_damage = 10
 time = 0
 death = False
 paused = False
+justUpgraded = False
 InvencibleP = False
 InvencibleP_actualTime = 0
 InvencibleP_lengt = 1000
 InvencibleE_lengt = 250
 life = 6
 enemyDeathCount = 0
-nivel = 40
+nivel = 1
 xp = 0
 bounce = 1
 opcoes_sorteadas = []
+circleDamage = 0
+circleRadius = 0
 escolhendo_habilidade = False
 weapons = [
     ['Velocidade Tiro', 1], 
     ['Tiro Órbita',0],
     ['Vida', 0],
     ['Bounce', 0],
-    ['Dano Tiro', 0]
+    ['Dano Tiro', 0],
+    ['Choro Amumu', 0]
 ]
 
 
@@ -66,8 +70,21 @@ def rebuild_orbitals():
             "damage": shoot_damage//2   # usa mesmo dano base
         })
 
+def colide_circulo_retangulo(circle_x, circle_y, radius, rect):
+    # Encontra o ponto mais próximo do centro do círculo dentro do retângulo
+    closest_x = max(rect.left, min(circle_x, rect.right))
+    closest_y = max(rect.top, min(circle_y, rect.bottom))
+    
+    # Calcula a distância do centro do círculo até esse ponto
+    dx = circle_x - closest_x
+    dy = circle_y - closest_y
+
+    # Se a distância for menor ou igual ao raio, há colisão
+    return (dx * dx + dy * dy) <= (radius * radius)
+
+
 def selecionaArma (arma):
-    global shoot_rate, life, bounce, shoot_damage, orbital_level, velOrb
+    global shoot_rate, life, bounce, shoot_damage, orbital_level, velOrb, circleRadius, circleDamage
     if arma[0] == 'Tiro Base':
         shoot_rate -= max(100, shoot_rate - 250)
     elif arma[0] == 'Vida':
@@ -77,11 +94,15 @@ def selecionaArma (arma):
     elif arma[0] == 'Dano Tiro':
         shoot_damage += 2
     elif arma[0] == 'Tiro Órbita':
-        if arma[1] % 2 == 0:
-            orbital_level += 1
-        else:
-            velOrb += 0.0005
+        orbital_level += 1
+        velOrb += 0.0005
         rebuild_orbitals()
+    elif arma[0] == 'Choro Amumu':
+        if arma[1] == 0:
+            circleRadius += 40
+        if arma[1] < 5:
+            circleRadius += 10
+        circleDamage += 1
     arma[1] += 1
 
 def escalonamentoXp (nivel):
@@ -124,7 +145,7 @@ def spawn_enemy ():
     global hero_pos_x, hero_pos_y,time, vidaInimigo
     min_distancia = 200  # distância mínima do jogador
     max_tentativas = 20  # evita loop infinito
-    vidaInimigo = 10 + (time*1//40)**2
+    vidaInimigo = 10 + (time*1//40)**2 
     for _ in range(max_tentativas):
         x = randint(0, width - 20)
         y = randint(0, height - 20)
@@ -174,18 +195,18 @@ def load():
     ]
     coracao = pygame.image.load('coracao.png')
     for i in range(1, 3): #carrega as imagens da animação
-        hero_idle.append(pygame.transform.scale(pygame.image.load("pinguimIdle" + str(i) + ".png"),(32,32)))
+        hero_idle.append(pygame.transform.scale(pygame.image.load("pinguimIdle" + str(i) + ".png"),(48,48)))
     for i in range (1,5):
         if i == 1 or i == 3:
-            hero_walking.append(pygame.transform.scale(pygame.image.load("pinguimIdle1.png"),(32,32)))
+            hero_walking.append(pygame.transform.scale(pygame.image.load("pinguimIdle1.png"),(48,48)))
         else:
-            hero_walking.append(pygame.transform.scale(pygame.image.load("pinguimWalk" + str(i//2) + ".png"),(32,32)))
+            hero_walking.append(pygame.transform.scale(pygame.image.load("pinguimWalk" + str(i//2) + ".png"),(48,48)))
     damage = pygame.image.load('damage.png')
     orbitImage = pygame.transform.scale(pygame.image.load('orbitAbility.png'), (32,32))
     lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility.png'),(32,32))
 
 def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer,moving,shoot_time, death, time, cronometro,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer,moving,shoot_time, death, justUpgraded, time, cronometro,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame
 
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
@@ -288,6 +309,17 @@ def update(dt):
 
         collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
 
+        if colide_circulo_retangulo(hero_pos_x+16,hero_pos_y+16,circleRadius,collider_enemy) and not enemy['invencibility']:
+            enemy['life'] -= circleDamage
+            enemy['invencibility'] = True
+            enemy['invencibility_actualTime'] = 0
+            collisions.append({
+                    "dmg"   : circleDamage,
+                    "x"     : enemy['posX'],
+                    "y"     : enemy['posY'],
+                    "timer" : 600          # milissegundos que o texto ficará visível
+                })
+            
         if collider_jogador.colliderect(collider_enemy) and not InvencibleP:
             life -= 1
             InvencibleP = True
@@ -300,6 +332,14 @@ def update(dt):
             if enemy['invencibility_actualTime'] >= InvencibleE_lengt:
                 enemy['invencibility'] = False
                 enemy['invencibility_actualTime'] = 0
+
+        if enemy['life'] <= 0:
+                enemies.remove(enemy)
+                enemyDeathCount += 1
+                if vidaInimigo == 10 or vidaInimigo == 11:
+                        ganhar_xp(1)
+                else:
+                    ganhar_xp((vidaInimigo-10)//2)
 
     for pop in collisions[:]:        # itera sobre cópia para poder remover
         pop["timer"] -= dt
@@ -344,13 +384,13 @@ def update(dt):
                 alvo['invencibility_actualTime'] = 0
                 tiro['bounc_rest'] -= 1
 
-                if tiro['alvo']['life'] <= 0:
+                """if tiro['alvo']['life'] <= 0:
                     enemyDeathCount += 1
                     if vidaInimigo == 10 or vidaInimigo == 11:
                         ganhar_xp(1)
                     else:
                         ganhar_xp((vidaInimigo-10)//2)
-                    enemies.remove(alvo)
+                    enemies.remove(alvo)"""
 
                 if tiro['bounc_rest'] > 0 and tiro['damage'] > 0:
                     tiro['damage'] -= 2
@@ -381,6 +421,7 @@ def update(dt):
         InvencibleP_actualTime += dt
         if InvencibleP_actualTime>= InvencibleP_lengt:
             InvencibleP = False
+            justUpgraded = False
             InvencibleP_actualTime = 0
     
     for orb in orbitals:
@@ -410,21 +451,23 @@ def update(dt):
                 })
                 enemy['invencibility'] = True
                 enemy['invencibility_actualTime'] = 0
-                if enemy['life'] <= 0:
+                """if enemy['life'] <= 0:
                     enemyDeathCount += 1
                     if vidaInimigo == 10 or vidaInimigo == 11:
                         ganhar_xp(1)
                     else:
                         ganhar_xp((vidaInimigo-10)//2)
-                    enemies.remove(enemy)
+                    enemies.remove(enemy)"""
             
 def draw_screen(screen):
     screen.fill((150,200,250))
     if not death:
+        pygame.draw.circle(screen,("#70aaff"),(hero_pos_x+16,hero_pos_y+16),circleRadius)
+        pygame.draw.rect(screen,("#00ff00"),collider_jogador)
         if not moving:
-            screen.blit(hero_idle[hero_idle_frame], (hero_pos_x, hero_pos_y))
+            screen.blit(hero_idle[hero_idle_frame], (hero_pos_x-8, hero_pos_y-8))
         else:
-            screen.blit(hero_walking[hero_walking_frame],(hero_pos_x, hero_pos_y))
+            screen.blit(hero_walking[hero_walking_frame],(hero_pos_x-8, hero_pos_y-8))
         for enemy in enemies:
             collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
             pygame.draw.rect(screen,("#ff0000"), collider_enemy)
@@ -441,7 +484,7 @@ def draw_screen(screen):
                                         (cx - orb["size"]//2,
                                         cy - orb["size"]//2),
                                         5)
-        if InvencibleP and InvencibleP_actualTime < 500:
+        if InvencibleP and InvencibleP_actualTime < 500 and not justUpgraded:
             screen.blit(damage,(0,0))
         fonteCronometro = pygame.font.SysFont(None, 30)
         cronometroTxt = fonteCronometro.render(cronometro, True, '#ffffff')
@@ -480,6 +523,7 @@ def draw_screen(screen):
                 elif arma[0] == 'Tiro Órbita':
                     screen.blit(orbitImage,(60,195+i*40))
             
+            
     else:
         screen.blit(damage,(0,0))
         fontedeath = pygame.font.SysFont(None, 100)
@@ -508,7 +552,7 @@ def draw_pause_overlay(screen):
 # A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
 #####################################################
 def main_loop(screen):  
-    global clock, paused, escolhendo_habilidade, InvencibleP
+    global clock, paused, escolhendo_habilidade, InvencibleP, justUpgraded
     running_right = True
     while running_right:
         for e in pygame.event.get(): 
@@ -520,21 +564,21 @@ def main_loop(screen):
                     paused = not paused
                 if escolhendo_habilidade:
                     paused = True
+                    InvencibleP = True
+                    justUpgraded = True
                     if e.key == pygame.K_1:
                         selecionaArma(opcoes_sorteadas[0])
                         escolhendo_habilidade = False
                         paused = False
-                        InvencibleP = True
                     elif e.key == pygame.K_2:
                         selecionaArma(opcoes_sorteadas[1])
                         escolhendo_habilidade = False
                         paused = False
-                        InvencibleP = True
                     elif e.key == pygame.K_3:
                         selecionaArma(opcoes_sorteadas[2])
                         escolhendo_habilidade = False
                         paused = False
-                        InvencibleP = True
+                        
 
         # Define FPS máximo
         clock.tick(60)
