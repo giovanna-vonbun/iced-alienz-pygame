@@ -3,8 +3,8 @@ from random import randint, sample
 from math import sqrt, pi, cos, sin
 width = 800
 height = 600
-hero_pos_x = 1
-hero_pos_y = 1
+hero_pos_x = 376
+hero_pos_y = 276
 hero_vel = 0.2
 hero_idle = []
 hero_walking = []
@@ -47,7 +47,8 @@ weapons = [
     ['Vida', 0],
     ['Bounce', 0],
     ['Dano Tiro', 0],
-    ['Choro Amumu', 0]
+    ['Choro Amumu', 0],
+    ['Velocidade Movimento', 0]
 ]
 
 
@@ -71,7 +72,7 @@ def rebuild_orbitals():
         })
 
 def colide_circulo_retangulo(circle_x, circle_y, radius, rect):
-    # Encontra o ponto mais próximo do centro do círculo dentro do retângulo
+    # Encontra o ponto mais próximo do centro do círculo dentro do retângulo (inimigo)
     closest_x = max(rect.left, min(circle_x, rect.right))
     closest_y = max(rect.top, min(circle_y, rect.bottom))
     
@@ -84,7 +85,7 @@ def colide_circulo_retangulo(circle_x, circle_y, radius, rect):
 
 
 def selecionaArma (arma):
-    global shoot_rate, life, bounce, shoot_damage, orbital_level, velOrb, circleRadius, circleDamage
+    global shoot_rate, life, bounce, shoot_damage, orbital_level, velOrb, circleRadius, circleDamage, hero_vel
     if arma[0] == 'Tiro Base':
         shoot_rate -= max(100, shoot_rate - 250)
     elif arma[0] == 'Vida':
@@ -100,9 +101,11 @@ def selecionaArma (arma):
     elif arma[0] == 'Choro Amumu':
         if arma[1] == 0:
             circleRadius += 40
-        if arma[1] < 5:
+        elif arma[1] < 5:
             circleRadius += 10
         circleDamage += 1
+    elif arma[0] == 'Velocidade Movimento':
+        hero_vel += 0.005
     arma[1] += 1
 
 def escalonamentoXp (nivel):
@@ -384,14 +387,6 @@ def update(dt):
                 alvo['invencibility_actualTime'] = 0
                 tiro['bounc_rest'] -= 1
 
-                """if tiro['alvo']['life'] <= 0:
-                    enemyDeathCount += 1
-                    if vidaInimigo == 10 or vidaInimigo == 11:
-                        ganhar_xp(1)
-                    else:
-                        ganhar_xp((vidaInimigo-10)//2)
-                    enemies.remove(alvo)"""
-
                 if tiro['bounc_rest'] > 0 and tiro['damage'] > 0:
                     tiro['damage'] -= 2
                     # candidatos = todos os inimigos EXCETO o que acabou de levar o hit
@@ -451,19 +446,11 @@ def update(dt):
                 })
                 enemy['invencibility'] = True
                 enemy['invencibility_actualTime'] = 0
-                """if enemy['life'] <= 0:
-                    enemyDeathCount += 1
-                    if vidaInimigo == 10 or vidaInimigo == 11:
-                        ganhar_xp(1)
-                    else:
-                        ganhar_xp((vidaInimigo-10)//2)
-                    enemies.remove(enemy)"""
-            
+           
 def draw_screen(screen):
     screen.fill((150,200,250))
     if not death:
         pygame.draw.circle(screen,("#70aaff"),(hero_pos_x+16,hero_pos_y+16),circleRadius)
-        pygame.draw.rect(screen,("#00ff00"),collider_jogador)
         if not moving:
             screen.blit(hero_idle[hero_idle_frame], (hero_pos_x-8, hero_pos_y-8))
         else:
