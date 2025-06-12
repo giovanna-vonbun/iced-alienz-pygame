@@ -119,13 +119,13 @@ def escalonamentoXp (nivel):
     return 10 + escalonamentoXp (nivel-1)
 
 xp_necessario = escalonamentoXp(nivel+1)
-def ajustar_spawn_interval(nivel_atual):
+def ajustar_spawn_interval(nihero_vel_atual):
     global enemy_spawn_interval
-    if nivel_atual < 21:          # 0–20
+    if nihero_vel_atual < 21:          # 0–20
         enemy_spawn_interval = 1000
-    elif nivel_atual < 41:        # 21–40
+    elif nihero_vel_atual < 41:        # 21–40
         enemy_spawn_interval = 750
-    elif nivel_atual < 100:       # 41–99
+    elif nihero_vel_atual < 100:       # 41–99
         enemy_spawn_interval = 250
     else:                         # 100+
         enemy_spawn_interval = 20
@@ -145,7 +145,7 @@ def ganhar_xp(valor):
         xp_necessario = escalonamentoXp(nivel + 1)
 
 def spawn_enemy ():
-    global hero_pos_x, hero_pos_y,time, vidaInimigo
+    global hero_pos_x, hero_pos_y, vidaInimigo
     min_distancia = 200  # distância mínima do jogador
     max_tentativas = 20  # evita loop infinito
     vidaInimigo = 10 + (time*1//40)**2 
@@ -197,7 +197,8 @@ def load():
         pygame.Rect(0,600,800,610)
     ]
     coracao = pygame.image.load('coracao.png')
-    for i in range(1, 3): #carrega as imagens da animação
+    
+    for i in range(1, 3):
         hero_idle.append(pygame.transform.scale(pygame.image.load("pinguimIdle" + str(i) + ".png"),(48,48)))
     for i in range (1,5):
         if i == 1 or i == 3:
@@ -213,62 +214,58 @@ def update(dt):
 
     old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
     keys = pygame.key.get_pressed()
+    # 1. Verifica quantas teclas foram apertadas
     qtdTeclasApertadas = 0
-    collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
+    if keys[pygame.K_d]: qtdTeclasApertadas += 1
+    if keys[pygame.K_a]: qtdTeclasApertadas += 1
+    if keys[pygame.K_w]: qtdTeclasApertadas += 1
+    if keys[pygame.K_s]: qtdTeclasApertadas += 1
 
+    # 2. Aplica correção na velocidade ANTES do movimento
+    hero_vel_atual = hero_vel
+    if qtdTeclasApertadas > 1:
+        hero_vel_atual = hero_vel_atual / (2 ** 0.5)  # Corrige para movimento diagonal
+
+    # 3. Aplica o movimento com velocidade já corrigida
+    moving = False
     if keys[pygame.K_d]:
-        hero_pos_x += (hero_vel * dt)
-        qtdTeclasApertadas += 1
+        hero_pos_x += hero_vel_atual * dt
         moving = True
         if hero_pos_x > 768:
-            hero_pos_x = old_hero_pos_x    
+            hero_pos_x = old_hero_pos_x
 
     if keys[pygame.K_a]:
-        hero_pos_x += - (hero_vel * dt)
-        qtdTeclasApertadas += 1
+        hero_pos_x -= hero_vel_atual * dt
         moving = True
         if hero_pos_x < 0:
             hero_pos_x = old_hero_pos_x
 
     if keys[pygame.K_w]:
-        hero_pos_y += - (hero_vel * dt)
-        qtdTeclasApertadas += 1
+        hero_pos_y -= hero_vel_atual * dt
         moving = True
         if hero_pos_y < 0:
-            hero_pos_y = old_hero_pos_y    
+            hero_pos_y = old_hero_pos_y
 
     if keys[pygame.K_s]:
-        hero_pos_y += (hero_vel * dt)
+        hero_pos_y += hero_vel_atual * dt
         moving = True
-        qtdTeclasApertadas += 1
         if hero_pos_y > 568:
             hero_pos_y = old_hero_pos_y
     
-    if qtdTeclasApertadas > 1:
-        hero_vel = 0.2 / 2 ** (1/2)
-        hero_walking_time += dt / 2 ** (1/2)
-        if hero_walking_time > 100:
-            hero_walking_frame += 1
-            if hero_walking_frame > 3:
-                hero_walking_frame = 0
-            hero_walking_time = 0
-    if qtdTeclasApertadas == 1:
-        hero_vel = 0.2
+    # 4. Animações
+    if qtdTeclasApertadas > 0:
         hero_walking_time += dt
         if hero_walking_time > 100:
-            hero_walking_frame += 1
-            if hero_walking_frame > 3:
-                hero_walking_frame = 0
+            hero_walking_frame = (hero_walking_frame + 1) % 4
             hero_walking_time = 0
-    
-    if qtdTeclasApertadas == 0:
+    else:
         hero_idle_time += dt
         if hero_idle_time > 200:
-            hero_idle_frame += 1
-            if hero_idle_frame > 1:
-                hero_idle_frame = 0
+            hero_idle_frame = (hero_idle_frame + 1) % 2
             hero_idle_time = 0
-        moving = False
+
+    # 5. Atualiza collider
+    collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
         
     time += dt/1000
     if time < 10:
