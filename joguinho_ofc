@@ -3,6 +3,7 @@ from random import randint, sample
 from math import sqrt, pi, cos, sin
 width = 800
 height = 600
+noMenu = True
 hero_pos_x = 376
 hero_pos_y = 276
 hero_vel = 0.2
@@ -42,12 +43,12 @@ circleDamage = 0
 circleRadius = 0
 escolhendo_habilidade = False
 weapons = [
-    ['Velocidade Tiro', 1], 
-    ['Tiro Órbita',0],
+    ['Recarga Bola de Neve', 0], 
+    ['Bola de Neve Orbital',0],
     ['Vida', 0],
-    ['Bounce', 0],
-    ['Dano Tiro', 0],
-    ['Choro Amumu', 0],
+    ['Bola de Neve Elástica', 0],
+    ['Bola de Neve Poderosa', 0],
+    ['Lágrimas de Pinguim', 0],
     ['Velocidade Movimento', 0]
 ]
 
@@ -86,19 +87,21 @@ def colide_circulo_retangulo(circle_x, circle_y, radius, rect):
 
 def selecionaArma (arma):
     global shoot_rate, life, bounce, shoot_damage, orbital_level, velOrb, circleRadius, circleDamage, hero_vel
-    if arma[0] == 'Tiro Base':
-        shoot_rate -= max(100, shoot_rate - 250)
+    if arma[0] == 'Recarga Bola de Neve':
+        print(shoot_rate)
+        shoot_rate = max(100, shoot_rate - 100)
+        print(shoot_rate)
     elif arma[0] == 'Vida':
         life += 2
-    elif arma[0] == 'Bounce':
+    elif arma[0] == 'Bola de Neve Elástica':
         bounce += 1
-    elif arma[0] == 'Dano Tiro':
+    elif arma[0] == 'Bola de Neve Poderosa':
         shoot_damage += 2
-    elif arma[0] == 'Tiro Órbita':
+    elif arma[0] == 'Bola de Neve Orbital':
         orbital_level += 1
         velOrb += 0.0005
         rebuild_orbitals()
-    elif arma[0] == 'Choro Amumu':
+    elif arma[0] == 'Lágrimas de Pinguim':
         if arma[1] == 0:
             circleRadius += 40
         elif arma[1] < 5:
@@ -188,7 +191,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -208,11 +211,14 @@ def load():
     damage = pygame.image.load('damage.png')
     orbitImage = pygame.transform.scale(pygame.image.load('orbitAbility.png'), (32,32))
     lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility.png'),(32,32))
+    menu = pygame.image.load('menu_icedalienz2.png')
+    musica = pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(0.1)
 
-def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer,moving,shoot_time, death, justUpgraded, time, cronometro,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame
-
-    old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y
+def movimentacao_player (dt):
+    global hero_pos_x, hero_pos_y, hero_vel, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame, moving
+    old_hero_pos_x, old_hero_pos_y = hero_pos_x, hero_pos_y, 
     keys = pygame.key.get_pressed()
     # 1. Verifica quantas teclas foram apertadas
     qtdTeclasApertadas = 0
@@ -264,9 +270,8 @@ def update(dt):
             hero_idle_frame = (hero_idle_frame + 1) % 2
             hero_idle_time = 0
 
-    # 5. Atualiza collider
-    collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
-        
+def cronometrador (dt):
+    global cronometro, time
     time += dt/1000
     if time < 10:
         cronometro = f'00:0{int(time)}'
@@ -276,6 +281,11 @@ def update(dt):
         cronometro = f'0{int(time//60)}:{int(time%60//10)}{int(time%60%10)}'
     elif time < 6000:
         cronometro = f'{int(time//60)}:{int(time%60//10)}{int(time%60%10)}'
+
+def update(dt):
+    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer,moving,shoot_time, death, justUpgraded,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce
+    # 5. Atualiza collider
+    collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
     
     spawn_timer += dt
     if spawn_timer >= enemy_spawn_interval:
@@ -313,13 +323,14 @@ def update(dt):
             enemy['life'] -= circleDamage
             enemy['invencibility'] = True
             enemy['invencibility_actualTime'] = 0
-            collisions.append({
-                    "dmg"   : circleDamage,
-                    "x"     : enemy['posX'],
-                    "y"     : enemy['posY'],
-                    "timer" : 600          # milissegundos que o texto ficará visível
-                })
-            
+            if circleDamage != 0:
+                collisions.append({
+                        "dmg"   : circleDamage,
+                        "x"     : enemy['posX'],
+                        "y"     : enemy['posY'],
+                        "timer" : 600          # milissegundos que o texto ficará visível
+                    })
+                
         if collider_jogador.colliderect(collider_enemy) and not InvencibleP:
             life -= 1
             InvencibleP = True
@@ -385,7 +396,7 @@ def update(dt):
                 tiro['bounc_rest'] -= 1
 
                 if tiro['bounc_rest'] > 0 and tiro['damage'] > 0:
-                    tiro['damage'] -= 2
+                    tiro['damage'] -= 4
                     # candidatos = todos os inimigos EXCETO o que acabou de levar o hit
                     candidatos = [e for e in enemies if e is not alvo]
                     if candidatos:                               # existe alguém além dele?
@@ -504,7 +515,7 @@ def draw_screen(screen):
                 screen.blit(rendered, (100, 200 + i * 40))
                 if arma[0] == 'Vida':
                     screen.blit(lifeImage,(60,195 + i * 40))
-                elif arma[0] == 'Tiro Órbita':
+                elif arma[0] == 'Bola de Neve Orbital':
                     screen.blit(orbitImage,(60,195+i*40))
             
             
@@ -522,6 +533,9 @@ def draw_screen(screen):
         fonteNivel = pygame.font.SysFont(None,25)
         textoNivel = fonteNivel.render(f'Nível alcançado: {nivel}', True, "#ffffff")
         screen.blit(textoNivel,(90,375))
+        fonteRejogar = pygame.font.SysFont(None,40)
+        textoRejogar = fonteRejogar.render('Pressione Enter para Rejogar', True, "#ffffff")
+        screen.blit(textoRejogar,(200,450))
 
 def draw_pause_overlay(screen):
     font = pygame.font.SysFont(None, 48)
@@ -532,51 +546,70 @@ def draw_pause_overlay(screen):
     screen.blit(sombra, sombra_rect)
     screen.blit(text, rect)
 
+def draw_menu(screen):
+    screen.blit(menu,(0,0))
 #####################################################
 # A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
 #####################################################
 def main_loop(screen):  
-    global clock, paused, escolhendo_habilidade, InvencibleP, justUpgraded
+    global clock, paused, escolhendo_habilidade, InvencibleP, justUpgraded, noMenu, death
     running_right = True
     while running_right:
-        for e in pygame.event.get(): 
-            if e.type == pygame.QUIT: # fechamento do prog
-                running_right = False
-                break
-            elif e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_ESCAPE:
-                    paused = not paused
-                if escolhendo_habilidade:
-                    paused = True
-                    InvencibleP = True
-                    justUpgraded = True
-                    if e.key == pygame.K_1:
-                        selecionaArma(opcoes_sorteadas[0])
-                        escolhendo_habilidade = False
-                        paused = False
-                    elif e.key == pygame.K_2:
-                        selecionaArma(opcoes_sorteadas[1])
-                        escolhendo_habilidade = False
-                        paused = False
-                    elif e.key == pygame.K_3:
-                        selecionaArma(opcoes_sorteadas[2])
-                        escolhendo_habilidade = False
-                        paused = False
-                        
-
         # Define FPS máximo
         clock.tick(60)
         # time transcorrido desde a última atualização 
         dt = clock.get_time()
-        # Atualiza posição dos objetos
-        if not paused and not death:
-            update(dt)
-        # Desenha objetos
-        draw_screen(screen)
-        if paused and not death and not escolhendo_habilidade:
-            draw_pause_overlay(screen)
-        # Pygame atualiza a visualização da tela
-        pygame.display.update()
+
+        if not noMenu:
+            for e in pygame.event.get(): 
+                if e.type == pygame.QUIT: # fechamento do prog
+                    running_right = False
+                    break
+                elif e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_ESCAPE:
+                        paused = not paused
+                    if escolhendo_habilidade:
+                        paused = True
+                        InvencibleP = True
+                        justUpgraded = True
+                        if e.key == pygame.K_1:
+                            selecionaArma(opcoes_sorteadas[0])
+                            escolhendo_habilidade = False
+                            paused = False
+                        elif e.key == pygame.K_2:
+                            selecionaArma(opcoes_sorteadas[1])
+                            escolhendo_habilidade = False
+                            paused = False
+                        elif e.key == pygame.K_3:
+                            selecionaArma(opcoes_sorteadas[2])
+                            escolhendo_habilidade = False
+                            paused = False
+
+                    if death == True:
+                        print(death)
+                        if e.key == pygame.KEYDOWN:
+                            if e.key == pygame.K_0:
+                                death = False
+                                print(death)
+
+            # Atualiza posição dos objetos
+            if not paused and not death:
+                movimentacao_player(dt)
+                cronometrador(dt)
+                update(dt)
+            # Desenha objetos
+            draw_screen(screen)
+            if paused and not death and not escolhendo_habilidade:
+                draw_pause_overlay(screen)
+            # Pygame atualiza a visualização da tela
+            pygame.display.update()
+        else:
+            draw_menu(screen)
+            pygame.display.update()  # Atualiza o menu na tela
+            for e in pygame.event.get():
+                posX_mouse, posY_mouse = pygame.mouse.get_pos()
+                if e.type == pygame.MOUSEBUTTONDOWN and 290 < posX_mouse < 510 and 310 < posY_mouse < 370:
+                    noMenu = False
 
 # Programa principal
 pygame.init()
