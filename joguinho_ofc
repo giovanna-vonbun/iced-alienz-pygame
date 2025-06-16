@@ -136,6 +136,7 @@ def ganhar_xp(valor):
     global opcoes_sorteadas, escolhendo_habilidade
     xp += valor
     if xp >= xp_necessario and nivel < 100:
+        pygame.mixer.Sound.play(SomLvlUp)
         nivel += 1
         xp = 0
         paused = True
@@ -189,7 +190,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLunch
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLunch, SomLvlUp, somDamage
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -211,12 +212,16 @@ def load():
     lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility.png'),(32,32))
     menu = pygame.image.load('menu_icedalienz3.png')
     telaPause = pygame.transform.scale(pygame.image.load('pause_icedalienz.png'),(800,600))
-    pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
+    pygame.mixer_music.load("Flocos no Silêncio.mp3")
     somSnowballLunch = pygame.mixer.Sound('BolaDeNeveLancamento.ogg')
     somSnowballArrive = pygame.mixer.Sound('Hit2.mp3')
-    pygame.mixer.Sound.set_volume(somSnowballArrive,0.3)
+    pygame.mixer.Sound.set_volume(somSnowballArrive,0.1)
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(0.1)
+    SomLvlUp = pygame.mixer.Sound('LevelUp.mp3')
+    pygame.mixer.Sound.set_volume(SomLvlUp,0.1)
+    somDamage = pygame.mixer.Sound('Damage.mp3')
+    pygame.mixer.Sound.set_volume(somDamage,0.1)
     
 
 def movimentacao_player (dt):
@@ -337,6 +342,7 @@ def update(dt):
             life -= 1
             InvencibleP = True
             InvencibleP_actualTime = 0
+            pygame.mixer.Sound.play(somDamage)
             if life == 0:
                 death = True
                 pygame.mixer_music.stop()
@@ -465,7 +471,7 @@ def update(dt):
                 })
                 enemy['invencibility'] = True
                 enemy['invencibility_actualTime'] = 0
-           
+    
 def draw_screen(screen):
     screen.fill((150,200,250))
     if not death:
@@ -614,11 +620,18 @@ def main_loop(screen):
                             InvencibleP = False
                             for arma in weapons:
                                 arma[1] = 0
+                            pygame.mixer_music.stop()
+                            pygame.mixer_music.unload()
+                            pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
+                            pygame.mixer_music.play(-1)
+                            pygame.mixer_music.set_volume(0.1)
 
             if death == True:
                 spawn_timer = 0
                 for enemy in enemies:
                     enemies.remove(enemy)
+                for pop in collisions:
+                    collisions.remove(pop)
 
             # Atualiza posição dos objetos
             if not paused and not death:
@@ -638,6 +651,11 @@ def main_loop(screen):
                 posX_mouse, posY_mouse = pygame.mouse.get_pos()
                 if e.type == pygame.MOUSEBUTTONDOWN and 290 < posX_mouse < 510 and 380 < posY_mouse < 450:
                     noMenu = False 
+                    pygame.mixer_music.stop()
+                    pygame.mixer_music.unload()
+                    pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
+                    pygame.mixer_music.play(-1)
+                    pygame.mixer_music.set_volume(0.1)
                 if e.type == pygame.QUIT: # fechamento do prog
                     running_right = False
                     break
