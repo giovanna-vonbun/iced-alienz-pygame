@@ -43,13 +43,13 @@ circleDamage = 0
 circleRadius = 0
 escolhendo_habilidade = False
 weapons = [
-    ['Recarga Bola de Neve', 0], 
-    ['Bola de Neve Orbital',0],
-    ['Vida', 0],
-    ['Bola de Neve Elástica', 0],
-    ['Bola de Neve Poderosa', 0],
-    ['Lágrimas de Pinguim', 0],
-    ['Velocidade Movimento', 0]
+    ['Recarga Bola de Neve', 0], #atira mais rápido
+    ['Bola de Neve Orbital',0], #gira em torno do pinguim
+    ['Vida', 0], #aumenta a vida
+    ['Bola de Neve Elástica', 0], #bola de neve que quica
+    ['Bola de Neve Poderosa', 0], #bola de neve dá mais dano
+    ['Lágrimas de Pinguim', 0], #área que dá dano em volta
+    ['Velocidade Movimento', 0] #aumenta a velocidade do pinguim
 ]
 
 
@@ -88,9 +88,7 @@ def colide_circulo_retangulo(circle_x, circle_y, radius, rect):
 def selecionaArma (arma):
     global shoot_rate, life, bounce, shoot_damage, orbital_level, velOrb, circleRadius, circleDamage, hero_vel
     if arma[0] == 'Recarga Bola de Neve':
-        print(shoot_rate)
         shoot_rate = max(100, shoot_rate - 100)
-        print(shoot_rate)
     elif arma[0] == 'Vida':
         life += 2
     elif arma[0] == 'Bola de Neve Elástica':
@@ -191,7 +189,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -211,7 +209,8 @@ def load():
     damage = pygame.image.load('damage.png')
     orbitImage = pygame.transform.scale(pygame.image.load('orbitAbility.png'), (32,32))
     lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility.png'),(32,32))
-    menu = pygame.image.load('menu_icedalienz2.png')
+    menu = pygame.image.load('menu_icedalienz3.png')
+    telaPause = pygame.transform.scale(pygame.image.load('pause_icedalienz.png'),(800,600))
     musica = pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(0.1)
@@ -286,7 +285,6 @@ def update(dt):
     global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer,moving,shoot_time, death, justUpgraded,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce
     # 5. Atualiza collider
     collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
-    
     spawn_timer += dt
     if spawn_timer >= enemy_spawn_interval:
         spawn_enemy()
@@ -346,7 +344,8 @@ def update(dt):
 
         if enemy['life'] <= 0:
                 enemies.remove(enemy)
-                enemyDeathCount += 1
+                if not death:
+                    enemyDeathCount += 1
                 if vidaInimigo == 10 or vidaInimigo == 11:
                         ganhar_xp(1)
                 else:
@@ -538,13 +537,7 @@ def draw_screen(screen):
         screen.blit(textoRejogar,(200,450))
 
 def draw_pause_overlay(screen):
-    font = pygame.font.SysFont(None, 48)
-    text = font.render("PAUSADO - pressione 'ESC' para continuar", True, "#ffffff")
-    sombra = font.render("PAUSADO - pressione 'ESC' para continuar", True, "#444444")
-    rect = text.get_rect(center=(width // 2, height // 2))
-    sombra_rect = rect.move(2, 2)
-    screen.blit(sombra, sombra_rect)
-    screen.blit(text, rect)
+    screen.blit(telaPause,(0,0))
 
 def draw_menu(screen):
     screen.blit(menu,(0,0))
@@ -552,7 +545,7 @@ def draw_menu(screen):
 # A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
 #####################################################
 def main_loop(screen):  
-    global clock, paused, escolhendo_habilidade, InvencibleP, justUpgraded, noMenu, death
+    global clock, paused, escolhendo_habilidade, bounce, spawn_timer, xp_necessario ,circleDamage,shoot_rate, circleRadius,InvencibleP, nivel, xp, enemyDeathCount ,velOrb, shoot_damage ,justUpgraded, orbital_level, noMenu, death, life, hero_pos_x, hero_pos_y, time, hero_vel
     running_right = True
     while running_right:
         # Define FPS máximo
@@ -586,11 +579,32 @@ def main_loop(screen):
                             paused = False
 
                     if death == True:
-                        print(death)
-                        if e.key == pygame.KEYDOWN:
-                            if e.key == pygame.K_0:
-                                death = False
-                                print(death)
+                        if e.key == pygame.K_0:
+                            spawn_timer = 0
+                            life = 6
+                            hero_pos_x = 376
+                            hero_pos_y = 276
+                            hero_vel = 0.2
+                            orbital_level = 0
+                            rebuild_orbitals()
+                            velOrb = 0.001
+                            time = 0
+                            shoot_damage = 10
+                            xp = 0
+                            xp_necessario = 5
+                            nivel = 1
+                            circleDamage = 0
+                            circleRadius = 0
+                            shoot_rate = 2000
+                            enemyDeathCount = 0
+                            bounce = 1
+                            death = False
+                            InvencibleP = False
+
+            if death == True:
+                spawn_timer = 0
+                for enemy in enemies:
+                    enemies.remove(enemy)
 
             # Atualiza posição dos objetos
             if not paused and not death:
@@ -608,8 +622,11 @@ def main_loop(screen):
             pygame.display.update()  # Atualiza o menu na tela
             for e in pygame.event.get():
                 posX_mouse, posY_mouse = pygame.mouse.get_pos()
-                if e.type == pygame.MOUSEBUTTONDOWN and 290 < posX_mouse < 510 and 310 < posY_mouse < 370:
-                    noMenu = False
+                if e.type == pygame.MOUSEBUTTONDOWN and 290 < posX_mouse < 510 and 380 < posY_mouse < 450:
+                    noMenu = False 
+                if e.type == pygame.QUIT: # fechamento do prog
+                    running_right = False
+                    break
 
 # Programa principal
 pygame.init()
