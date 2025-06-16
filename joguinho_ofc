@@ -189,7 +189,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLunch
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -211,9 +211,13 @@ def load():
     lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility.png'),(32,32))
     menu = pygame.image.load('menu_icedalienz3.png')
     telaPause = pygame.transform.scale(pygame.image.load('pause_icedalienz.png'),(800,600))
-    musica = pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
+    pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
+    somSnowballLunch = pygame.mixer.Sound('BolaDeNeveLancamento.ogg')
+    somSnowballArrive = pygame.mixer.Sound('Hit2.mp3')
+    pygame.mixer.Sound.set_volume(somSnowballArrive,0.3)
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(0.1)
+    
 
 def movimentacao_player (dt):
     global hero_pos_x, hero_pos_y, hero_vel, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame, moving
@@ -335,6 +339,11 @@ def update(dt):
             InvencibleP_actualTime = 0
             if life == 0:
                 death = True
+                pygame.mixer_music.stop()
+                pygame.mixer_music.unload()
+                pygame.mixer_music.load("Pinguim no Gelo.mp3")
+                pygame.mixer_music.play(-1)
+                pygame.mixer_music.set_volume(0.1)
 
         if enemy['invencibility']:
             enemy['invencibility_actualTime'] += dt
@@ -362,6 +371,7 @@ def update(dt):
         dx = inimigoMaisProx["posX"] - hero_pos_x
         dy = inimigoMaisProx["posY"] - hero_pos_y
         shoot(dx, dy)
+        #pygame.mixer.Sound.play(somSnowballLunch)
         shoot_time = 0
 
     for tiro in projectiles[:]:
@@ -383,6 +393,7 @@ def update(dt):
          alvo_rect = pygame.Rect(alvo["posX"], alvo["posY"], 20, 20)
          if tiro_rect.colliderect(alvo_rect):
             if not alvo['invencibility']:
+                pygame.mixer.Sound.play(somSnowballArrive)
                 alvo['life'] -= tiro['damage']
                 collisions.append({
                     "dmg"   : tiro['damage'],
@@ -444,6 +455,7 @@ def update(dt):
         for enemy in enemies[:]:
             enemy_rect = pygame.Rect(enemy['posX'], enemy['posY'], 20, 20)
             if orb_rect.colliderect(enemy_rect) and not enemy['invencibility']:
+                pygame.mixer.Sound.play(somSnowballArrive)
                 enemy['life'] -= orb["damage"]
                 collisions.append({
                     "dmg"   : shoot_damage//2,
@@ -579,7 +591,7 @@ def main_loop(screen):
                             paused = False
 
                     if death == True:
-                        if e.key == pygame.K_0:
+                        if e.key == pygame.K_KP_ENTER:
                             spawn_timer = 0
                             life = 6
                             hero_pos_x = 376
@@ -600,6 +612,8 @@ def main_loop(screen):
                             bounce = 1
                             death = False
                             InvencibleP = False
+                            for arma in weapons:
+                                arma[1] = 0
 
             if death == True:
                 spawn_timer = 0
