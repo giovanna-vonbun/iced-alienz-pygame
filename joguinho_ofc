@@ -553,6 +553,11 @@ def draw_screen(screen):
         fonteRejogar = pygame.font.SysFont(None,40)
         textoRejogar = fonteRejogar.render('Pressione Espaço para Rejogar', True, "#ffffff")
         screen.blit(textoRejogar,(180,450))
+        fonteVoltarMenu = pygame.font.SysFont(None,30)
+        textoVoltarMenu = fonteVoltarMenu.render('Pressione m para voltar ao menu', True, "#ffffff")
+        screen.blit(textoRejogar,(180,450))
+        screen.blit(textoVoltarMenu,(180,480))
+
 
 def draw_pause_overlay(screen):
     screen.blit(telaPause,(0,0))
@@ -598,6 +603,28 @@ def main_loop(screen):
 
                     if death == True:
                         if e.key == pygame.K_SPACE:
+                            spawn_timer = 0
+                            life = 6
+                            hero_pos_x = 376
+                            hero_pos_y = 276
+                            hero_vel = 0.2
+                            orbital_level = 0
+                            rebuild_orbitals()
+                            velOrb = 0.001
+                            time = 0
+                            shoot_damage = 10
+                            xp = 0
+                            xp_necessario = 5
+                            nivel = 1
+                            circleDamage = 0
+                            circleRadius = 0
+                            shoot_rate = 2000
+                            enemyDeathCount = 0
+                            bounce = 1
+                            death = False
+                            InvencibleP = False
+                        if e.key == pygame.K_m:
+                            noMenu = True
                             spawn_timer = 0
                             life = 6
                             hero_pos_x = 376
