@@ -625,7 +625,8 @@ def main_loop(screen):
                             pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
                             pygame.mixer_music.play(-1)
                             pygame.mixer_music.set_volume(0.1)
-
+                        if e.key == pygame.K_ESCAPE:
+                            noMenu = True
             if death == True:
                 spawn_timer = 0
                 for enemy in enemies:
