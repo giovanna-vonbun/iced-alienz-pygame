@@ -125,7 +125,7 @@ def ajustar_spawn_interval(nihero_vel_atual):
     if nihero_vel_atual < 21:          # 0–20
         enemy_spawn_interval = 1000
     elif nihero_vel_atual < 41:        # 21–40
-        enemy_spawn_interval = 750
+        enemy_spawn_interval = 500
     elif nihero_vel_atual < 100:       # 41–99
         enemy_spawn_interval = 250
     else:                         # 100+
@@ -190,7 +190,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLunch, SomLvlUp, somDamage
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -213,7 +213,7 @@ def load():
     menu = pygame.image.load('menu_icedalienz3.png')
     telaPause = pygame.transform.scale(pygame.image.load('pause_icedalienz.png'),(800,600))
     pygame.mixer_music.load("Flocos no Silêncio.mp3")
-    somSnowballLunch = pygame.mixer.Sound('BolaDeNeveLancamento.ogg')
+    somSnowballLaunch = pygame.mixer.Sound('BolaDeNeveLancamento.ogg')
     somSnowballArrive = pygame.mixer.Sound('Hit2.mp3')
     pygame.mixer.Sound.set_volume(somSnowballArrive,0.1)
     pygame.mixer.music.play(-1)
@@ -377,7 +377,7 @@ def update(dt):
         dx = inimigoMaisProx["posX"] - hero_pos_x
         dy = inimigoMaisProx["posY"] - hero_pos_y
         shoot(dx, dy)
-        #pygame.mixer.Sound.play(somSnowballLunch)
+        #pygame.mixer.Sound.play(somSnowballLaunch)
         shoot_time = 0
 
     for tiro in projectiles[:]:
@@ -411,8 +411,8 @@ def update(dt):
                 alvo['invencibility_actualTime'] = 0
                 tiro['bounc_rest'] -= 1
 
-                if tiro['bounc_rest'] > 0 and tiro['damage'] > 0:
-                    tiro['damage'] -= 4
+                if tiro['bounc_rest'] > 0 and (tiro['damage'] - 2) > 0:
+                    tiro['damage'] -= 2
                     # candidatos = todos os inimigos EXCETO o que acabou de levar o hit
                     candidatos = [e for e in enemies if e is not alvo]
                     if candidatos:                               # existe alguém além dele?
@@ -551,8 +551,8 @@ def draw_screen(screen):
         textoNivel = fonteNivel.render(f'Nível alcançado: {nivel}', True, "#ffffff")
         screen.blit(textoNivel,(90,375))
         fonteRejogar = pygame.font.SysFont(None,40)
-        textoRejogar = fonteRejogar.render('Pressione Enter para Rejogar', True, "#ffffff")
-        screen.blit(textoRejogar,(200,450))
+        textoRejogar = fonteRejogar.render('Pressione Espaço para Rejogar', True, "#ffffff")
+        screen.blit(textoRejogar,(180,450))
 
 def draw_pause_overlay(screen):
     screen.blit(telaPause,(0,0))
@@ -597,7 +597,7 @@ def main_loop(screen):
                             paused = False
 
                     if death == True:
-                        if e.key == pygame.K_KP_ENTER:
+                        if e.key == pygame.K_SPACE:
                             spawn_timer = 0
                             life = 6
                             hero_pos_x = 376
