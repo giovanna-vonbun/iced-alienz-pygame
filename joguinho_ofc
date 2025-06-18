@@ -14,9 +14,13 @@ hero_walking_time = 0
 moving = False
 hero_idle_frame = 0
 hero_idle_time = 0
-enemies = []
-spawn_timer = 0
-enemy_spawn_interval = 1000
+enemiesMelee = []
+spawnMelee_timer = 0
+enemyMelee_spawn_interval = 1000
+enemiesRanged = []
+spawnRanged_timer = 0
+enemyRanged_spawn_interval = 5000
+enemiesGlobal = []
 projectiles = []
 orbitals       = []   # projéteis que orbitam o herói
 orbital_level  = 0    # quantas balas na órbita
@@ -110,7 +114,7 @@ def selecionaArma (arma):
     arma[1] += 1
 
 def escalonamentoXp (nivel):
-    global enemy_spawn_interval
+    global enemyMelee_spawn_interval
     if nivel == 2:
         return 5
     if nivel == 21:
@@ -120,19 +124,20 @@ def escalonamentoXp (nivel):
     return 10 + escalonamentoXp (nivel-1)
 
 xp_necessario = escalonamentoXp(nivel+1)
+
 def ajustar_spawn_interval(nihero_vel_atual):
-    global enemy_spawn_interval
+    global enemyMelee_spawn_interval
     if nihero_vel_atual < 21:          # 0–20
-        enemy_spawn_interval = 1000
+        enemyMelee_spawn_interval = 1000
     elif nihero_vel_atual < 41:        # 21–40
-        enemy_spawn_interval = 500
+        enemyMelee_spawn_interval = 500
     elif nihero_vel_atual < 100:       # 41–99
-        enemy_spawn_interval = 250
+        enemyMelee_spawn_interval = 250
     else:                         # 100+
-        enemy_spawn_interval = 20
+        enemyMelee_spawn_interval = 20
 
 def ganhar_xp(valor):
-    global xp, nivel, xp_necessario, paused, enemy_spawn_interval
+    global xp, nivel, xp_necessario, paused, enemyMelee_spawn_interval
     global opcoes_sorteadas, escolhendo_habilidade
     xp += valor
     if xp >= xp_necessario and nivel < 100:
@@ -146,7 +151,7 @@ def ganhar_xp(valor):
         opcoes_sorteadas = sample(weapons, k=3)
         xp_necessario = escalonamentoXp(nivel + 1)
 
-def spawn_enemy ():
+def spawn_enemyMelee ():
     global hero_pos_x, hero_pos_y, vidaInimigo
     min_distancia = 200  # distância mínima do jogador
     max_tentativas = 20  # evita loop infinito
@@ -167,7 +172,33 @@ def spawn_enemy ():
                 "invencibility": False,
                 "invencibility_actualTime": 0
             }
-            enemies.append(enemy)
+            enemiesMelee.append(enemy)
+            enemiesGlobal.append(enemy)
+            break
+
+def spawn_enemyRanged ():
+    global hero_pos_x, hero_pos_y, vidaInimigo
+    min_distancia = 200  # distância mínima do jogador
+    max_tentativas = 20  # evita loop infinito
+    vidaInimigo = 10 + (time*1//40)**2 
+    for _ in range(max_tentativas):
+        x = randint(0, width - 20)
+        y = randint(0, height - 20)
+        dx = x - hero_pos_x
+        dy = y - hero_pos_y
+        distancia = sqrt(dx**2 + dy**2)
+
+        if distancia >= min_distancia:
+            enemy = {
+                "posX": x,
+                "posY": y,
+                "vel": 0.05,
+                "life": vidaInimigo,
+                "invencibility": False,
+                "invencibility_actualTime": 0
+            }
+            enemiesRanged.append(enemy)
+            enemiesGlobal.append(enemy)
             break
 
 def shoot(dx, dy):
@@ -183,11 +214,14 @@ def shoot(dx, dy):
     }
 
     # Define o alvo mais próximo:
-    if enemies:
-        inimigoMaisProx = min(enemies, key=lambda e: sqrt((e['posX'] - hero_pos_x) ** 2 + (e['posY'] - hero_pos_y) ** 2))
+    if enemiesMelee:
+        inimigoMaisProx = min(enemiesMelee, key=lambda e: sqrt((e['posX'] - hero_pos_x) ** 2 + (e['posY'] - hero_pos_y) ** 2))
         tiro["alvo"] = inimigoMaisProx
 
     projectiles.append(tiro)
+
+def enemyShoot ():
+    print('to atirando')
 
 def load():
     global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade
@@ -290,18 +324,45 @@ def cronometrador (dt):
     elif time < 6000:
         cronometro = f'{int(time//60)}:{int(time%60//10)}{int(time%60%10)}'
 
-def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, collider_jogador, spawn_timer,moving,shoot_time, death, justUpgraded,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce
-    # 5. Atualiza collider
+def funcionamentoRanged (dt):
+    global spawnRanged_timer
+    spawnRanged_timer += dt
+    if spawnRanged_timer >= enemyRanged_spawn_interval:
+        spawn_enemyRanged()
+        spawnRanged_timer = 0
+
+    distanciaMin = 100
+    for enemy in enemiesRanged:
+        distanciaJxE_X = enemy['posX'] - hero_pos_x
+        distanciaJxE_Y = enemy['posY'] - hero_pos_y
+        distancia = sqrt(distanciaJxE_X**2 + distanciaJxE_Y**2)
+
+    if distancia > distanciaMin:
+        for enemy in enemiesRanged:
+            if enemy['posX'] > hero_pos_x:
+                enemy['posX'] -= (enemy['vel']*dt)
+            elif enemy['posX'] < hero_pos_x:
+                enemy['posX'] += (enemy['vel']*dt)
+            else:
+                enemy['posX'] = enemy['posX']
+            
+            if enemy['posY'] > hero_pos_y:
+                enemy['posY'] -= (enemy['vel']*dt)
+            elif enemy['posY'] < hero_pos_y:
+                enemy['posY'] += (enemy['vel']*dt)
+            else:
+                enemy['posY'] = enemy['posY']
+    else:
+        #enemyShoot()
+        print('to parado')
+
+def funcionamentoInimigos (dt):
+    global inimigoMaisProx, InvencibleP_actualTime, InvencibleP, collider_jogador, enemyDeathCount, life
     collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
-    spawn_timer += dt
-    if spawn_timer >= enemy_spawn_interval:
-        spawn_enemy()
-        spawn_timer = 0
-    
+
     inimigoMaisProx = None
     distMenor = float('inf')
-    for enemy in enemies:
+    for enemy in enemiesGlobal:
         distanciaJxE_X = enemy['posX'] - hero_pos_x
         distanciaJxE_Y = enemy['posY'] - hero_pos_y
         distanciaGeral = sqrt(distanciaJxE_X**2 + distanciaJxE_Y**2)
@@ -309,20 +370,6 @@ def update(dt):
         if distanciaGeral < distMenor:
             distMenor = distanciaGeral
             inimigoMaisProx = enemy
-
-        if enemy['posX'] > hero_pos_x:
-            enemy['posX'] -= (enemy['vel']*dt)
-        elif enemy['posX'] < hero_pos_x:
-            enemy['posX'] += (enemy['vel']*dt)
-        else:
-            enemy['posX'] = enemy['posX']
-        
-        if enemy['posY'] > hero_pos_y:
-            enemy['posY'] -= (enemy['vel']*dt)
-        elif enemy['posY'] < hero_pos_y:
-            enemy['posY'] += (enemy['vel']*dt)
-        else:
-            enemy['posY'] = enemy['posY']
 
         collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
 
@@ -358,7 +405,7 @@ def update(dt):
                 enemy['invencibility_actualTime'] = 0
 
         if enemy['life'] <= 0:
-                enemies.remove(enemy)
+                enemiesGlobal.remove(enemy)
                 if not death:
                     enemyDeathCount += 1
                 if vidaInimigo == 10 or vidaInimigo == 11:
@@ -366,6 +413,39 @@ def update(dt):
                 else:
                     ganhar_xp((vidaInimigo-10)//2)
 
+def funcionamentoMelee (dt):
+    global spawnMelee_timer
+    spawnMelee_timer += dt
+    if spawnMelee_timer >= enemyMelee_spawn_interval:
+        spawn_enemyMelee()
+        spawnMelee_timer = 0
+    
+    for enemy in enemiesMelee:
+        if enemy['posX'] > hero_pos_x:
+            enemy['posX'] -= (enemy['vel']*dt)
+        elif enemy['posX'] < hero_pos_x:
+            enemy['posX'] += (enemy['vel']*dt)
+        else:
+            enemy['posX'] = enemy['posX']
+        
+        if enemy['posY'] > hero_pos_y:
+            enemy['posY'] -= (enemy['vel']*dt)
+        elif enemy['posY'] < hero_pos_y:
+            enemy['posY'] += (enemy['vel']*dt)
+        else:
+            enemy['posY'] = enemy['posY']
+    
+def invencibilidadeJogador (dt):
+    global justUpgraded, InvencibleP, InvencibleP_actualTime
+    if InvencibleP:
+        InvencibleP_actualTime += dt
+        if InvencibleP_actualTime>= InvencibleP_lengt:
+            InvencibleP = False
+            justUpgraded = False
+            InvencibleP_actualTime = 0
+
+def update(dt):
+    global hero_pos_x, hero_pos_y, hero_vel, spawnMelee_timer,moving,shoot_time, death, justUpgraded,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce
     for pop in collisions[:]:        # itera sobre cópia para poder remover
         pop["timer"] -= dt
         pop["y"] -= 0.03 * dt  
@@ -382,7 +462,7 @@ def update(dt):
 
     for tiro in projectiles[:]:
          alvo = tiro["alvo"]
-         if alvo not in enemies:
+         if alvo not in enemiesMelee:
             projectiles.remove(tiro)
             continue
 
@@ -414,7 +494,7 @@ def update(dt):
                 if tiro['bounc_rest'] > 0 and (tiro['damage'] - 2) > 0:
                     tiro['damage'] -= 2
                     # candidatos = todos os inimigos EXCETO o que acabou de levar o hit
-                    candidatos = [e for e in enemies if e is not alvo]
+                    candidatos = [e for e in enemiesMelee if e is not alvo]
                     if candidatos:                               # existe alguém além dele?
                         novo_alvo = min(
                             candidatos,
@@ -435,13 +515,6 @@ def update(dt):
             else:
                 # inimigo ainda está invencível, não faz nada nesse frame
                 pass
-
-    if InvencibleP:
-        InvencibleP_actualTime += dt
-        if InvencibleP_actualTime>= InvencibleP_lengt:
-            InvencibleP = False
-            justUpgraded = False
-            InvencibleP_actualTime = 0
     
     for orb in orbitals:
         # avança ângulo
@@ -458,7 +531,7 @@ def update(dt):
                             orb["size"], orb["size"])
 
         # colisão com inimigos (sem destruir a bala)
-        for enemy in enemies[:]:
+        for enemy in enemiesMelee[:]:
             enemy_rect = pygame.Rect(enemy['posX'], enemy['posY'], 20, 20)
             if orb_rect.colliderect(enemy_rect) and not enemy['invencibility']:
                 pygame.mixer.Sound.play(somSnowballArrive)
@@ -480,7 +553,7 @@ def draw_screen(screen):
             screen.blit(hero_idle[hero_idle_frame], (hero_pos_x-8, hero_pos_y-8))
         else:
             screen.blit(hero_walking[hero_walking_frame],(hero_pos_x-8, hero_pos_y-8))
-        for enemy in enemies:
+        for enemy in enemiesMelee:
             collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
             pygame.draw.rect(screen,("#ff0000"), collider_enemy)
         for tiro in projectiles:
@@ -531,7 +604,7 @@ def draw_screen(screen):
             screen.blit(cartaHabilidade,(550,100))
             for i, arma in enumerate(opcoes_sorteadas):
                 txt = f"{arma[0]}"#(nível atual: {arma[1]})"
-                rendered = font.render(txt, True, "#ffffff")
+                rendered = font.render(txt, True, "#CAF0F8")
                 screen.blit(rendered, (118+225*i, 244))
                 if arma[0] == 'Vida':
                     screen.blit(lifeImage,(115+225*i,113))
@@ -544,9 +617,9 @@ def draw_screen(screen):
         fontedeath = pygame.font.SysFont(None, 100)
         texto = fontedeath.render('VOCÊ MORREU!', True, "#271BD5")
         screen.blit(texto, (120, 250))
-        fonteEnemies = pygame.font.SysFont(None, 25)
-        textoEnemies2 = fonteEnemies.render(f'Inimigos eliminados: {enemyDeathCount}', True, "#ffffff")
-        screen.blit(textoEnemies2,(500,375))
+        fonteenemiesMelee = pygame.font.SysFont(None, 25)
+        textoenemiesMelee2 = fonteenemiesMelee.render(f'Inimigos eliminados: {enemyDeathCount}', True, "#ffffff")
+        screen.blit(textoenemiesMelee2,(500,375))
         fonteCron = pygame.font.SysFont(None, 25)
         textoCron = fonteCron.render(f'Tempo sobrevivido: {cronometro}',True,"#ffffff")
         screen.blit(textoCron,(270,375))
@@ -561,17 +634,17 @@ def draw_screen(screen):
         screen.blit(textoRejogar,(180,450))
         screen.blit(textoVoltarMenu,(180,480))
 
-
 def draw_pause_overlay(screen):
     screen.blit(telaPause,(0,0))
 
 def draw_menu(screen):
     screen.blit(menu,(0,0))
+
 #####################################################
 # A PRINCIPIO NÃO PRECISA ALTERAR DAQUI PRA BAIXO   #
 #####################################################
 def main_loop(screen):  
-    global clock, paused, escolhendo_habilidade, bounce, spawn_timer, xp_necessario ,circleDamage,shoot_rate, circleRadius,InvencibleP, nivel, xp, enemyDeathCount ,velOrb, shoot_damage ,justUpgraded, orbital_level, noMenu, death, life, hero_pos_x, hero_pos_y, time, hero_vel
+    global clock, paused, escolhendo_habilidade, bounce, spawnMelee_timer, xp_necessario ,circleDamage,shoot_rate, circleRadius,InvencibleP, nivel, xp, enemyDeathCount ,velOrb, shoot_damage ,justUpgraded, orbital_level, noMenu, death, life, hero_pos_x, hero_pos_y, time, hero_vel
     running_right = True
     while running_right:
         # Define FPS máximo
@@ -605,7 +678,7 @@ def main_loop(screen):
                             paused = False
 
                     if death == True:
-                        spawn_timer = 0
+                        spawnMelee_timer = 0
                         life = 6
                         hero_pos_x = 376
                         hero_pos_y = 276
@@ -643,9 +716,9 @@ def main_loop(screen):
                             death = False
 
             if death == True:
-                spawn_timer = 0
-                for enemy in enemies:
-                    enemies.remove(enemy)
+                spawnMelee_timer = 0
+                for enemy in enemiesMelee:
+                    enemiesMelee.remove(enemy)
                 for pop in collisions:
                     collisions.remove(pop)
 
