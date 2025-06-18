@@ -22,6 +22,7 @@ spawnRanged_timer = 0
 enemyRanged_spawn_interval = 5000
 enemiesGlobal = []
 projectiles = []
+enemyProjectiles = []
 orbitals       = []   # projéteis que orbitam o herói
 orbital_level  = 0    # quantas balas na órbita
 velOrb = 0.001
@@ -57,6 +58,7 @@ weapons = [
 ]
 
 
+
 def load_mapa(filename):    #Lê o conteúdo do arquivo para a matriz
     pass
 
@@ -87,7 +89,6 @@ def colide_circulo_retangulo(circle_x, circle_y, radius, rect):
 
     # Se a distância for menor ou igual ao raio, há colisão
     return (dx * dx + dy * dy) <= (radius * radius)
-
 
 def selecionaArma (arma):
     global shoot_rate, life, bounce, shoot_damage, orbital_level, velOrb, circleRadius, circleDamage, hero_vel
@@ -195,14 +196,16 @@ def spawn_enemyRanged ():
                 "vel": 0.05,
                 "life": vidaInimigo,
                 "invencibility": False,
-                "invencibility_actualTime": 0
+                "invencibility_actualTime": 0,
+                "shoot_interval": 3000,
+                "shoot_actualTime": 2999
             }
             enemiesRanged.append(enemy)
             enemiesGlobal.append(enemy)
             break
 
-def shoot(dx, dy):
-    global hero_pos_x, hero_pos_y, projectiles, bounce
+def shoot():
+    global hero_pos_x, hero_pos_y, bounce
 
     tiro = {
         "x": hero_pos_x + 16,
@@ -214,17 +217,34 @@ def shoot(dx, dy):
     }
 
     # Define o alvo mais próximo:
-    if enemiesMelee:
-        inimigoMaisProx = min(enemiesMelee, key=lambda e: sqrt((e['posX'] - hero_pos_x) ** 2 + (e['posY'] - hero_pos_y) ** 2))
+    if enemiesGlobal:
+        inimigoMaisProx = min(enemiesGlobal, key=lambda e: sqrt((e['posX'] - hero_pos_x) ** 2 + (e['posY'] - hero_pos_y) ** 2))
         tiro["alvo"] = inimigoMaisProx
 
     projectiles.append(tiro)
 
-def enemyShoot ():
-    print('to atirando')
+def enemyShoot (enemyPosX, enemyPosY):
+    dx = (hero_pos_x + 16) - (enemyPosX + 10)
+    dy = (hero_pos_y + 16) - (enemyPosY + 10)
+    distancia = sqrt(dx**2 + dy**2)
+    
+    if distancia == 0:
+        distancia = 1  # Evita divisão por zero
+
+    velocidade = 0.1
+    vx = (dx / distancia) * velocidade
+    vy = (dy / distancia) * velocidade
+
+    tiro = {
+        "x": enemyPosX + 10,
+        "y": enemyPosY + 10,
+        "velX": vx,
+        "velY": vy
+    }
+    enemyProjectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade, nave_inimiga, alien_inimigo
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -257,6 +277,8 @@ def load():
     somDamage = pygame.mixer.Sound('Damage.mp3')
     pygame.mixer.Sound.set_volume(somDamage,0.1)
     cartaHabilidade = pygame.image.load('abilityCard.png')
+    nave_inimiga = pygame.transform.scale(pygame.image.load('nave_icedalienz.png'),(48,48))
+    alien_inimigo = pygame.transform.scale(pygame.image.load('enemySprite1.png'),(32,32))
 
 def movimentacao_player (dt):
     global hero_pos_x, hero_pos_y, hero_vel, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame, moving
@@ -331,14 +353,13 @@ def funcionamentoRanged (dt):
         spawn_enemyRanged()
         spawnRanged_timer = 0
 
-    distanciaMin = 100
+    distanciaMin = 200
     for enemy in enemiesRanged:
         distanciaJxE_X = enemy['posX'] - hero_pos_x
         distanciaJxE_Y = enemy['posY'] - hero_pos_y
         distancia = sqrt(distanciaJxE_X**2 + distanciaJxE_Y**2)
-
-    if distancia > distanciaMin:
-        for enemy in enemiesRanged:
+        enemy['shoot_actualTime'] += dt
+        if distancia >= distanciaMin:
             if enemy['posX'] > hero_pos_x:
                 enemy['posX'] -= (enemy['vel']*dt)
             elif enemy['posX'] < hero_pos_x:
@@ -352,12 +373,14 @@ def funcionamentoRanged (dt):
                 enemy['posY'] += (enemy['vel']*dt)
             else:
                 enemy['posY'] = enemy['posY']
-    else:
-        #enemyShoot()
-        print('to parado')
+            
+        else:
+            if enemy["shoot_actualTime"] >= enemy["shoot_interval"]:
+                enemyShoot(enemy['posX'],enemy['posY'])
+                enemy["shoot_actualTime"] = 0
 
 def funcionamentoInimigos (dt):
-    global inimigoMaisProx, InvencibleP_actualTime, InvencibleP, collider_jogador, enemyDeathCount, life
+    global inimigoMaisProx, InvencibleP_actualTime, InvencibleP, collider_jogador, enemyDeathCount, life, death
     collider_jogador = pygame.Rect(hero_pos_x, hero_pos_y, 32, 32)
 
     inimigoMaisProx = None
@@ -405,7 +428,10 @@ def funcionamentoInimigos (dt):
                 enemy['invencibility_actualTime'] = 0
 
         if enemy['life'] <= 0:
+                print(enemy['life'])
                 enemiesGlobal.remove(enemy)
+                if enemy in enemiesRanged:
+                    enemiesRanged.remove(enemy)
                 if not death:
                     enemyDeathCount += 1
                 if vidaInimigo == 10 or vidaInimigo == 11:
@@ -444,25 +470,25 @@ def invencibilidadeJogador (dt):
             justUpgraded = False
             InvencibleP_actualTime = 0
 
-def update(dt):
-    global hero_pos_x, hero_pos_y, hero_vel, spawnMelee_timer,moving,shoot_time, death, justUpgraded,enemyDeathCount, life, InvencibleP_actualTime, InvencibleP, paused, bounce
+def danoNaTela (dt):
     for pop in collisions[:]:        # itera sobre cópia para poder remover
         pop["timer"] -= dt
         pop["y"] -= 0.03 * dt  
         if pop["timer"] <= 0:
             collisions.remove(pop)
 
+def atira (dt):
+    global shoot_time
     shoot_time += dt
     if shoot_time >= shoot_rate and inimigoMaisProx:
-        dx = inimigoMaisProx["posX"] - hero_pos_x
-        dy = inimigoMaisProx["posY"] - hero_pos_y
-        shoot(dx, dy)
+        shoot()
         #pygame.mixer.Sound.play(somSnowballLaunch)
         shoot_time = 0
 
+def atualizaTiro (dt):
     for tiro in projectiles[:]:
          alvo = tiro["alvo"]
-         if alvo not in enemiesMelee:
+         if alvo not in enemiesGlobal:
             projectiles.remove(tiro)
             continue
 
@@ -494,7 +520,7 @@ def update(dt):
                 if tiro['bounc_rest'] > 0 and (tiro['damage'] - 2) > 0:
                     tiro['damage'] -= 2
                     # candidatos = todos os inimigos EXCETO o que acabou de levar o hit
-                    candidatos = [e for e in enemiesMelee if e is not alvo]
+                    candidatos = [e for e in enemiesGlobal if e is not alvo]
                     if candidatos:                               # existe alguém além dele?
                         novo_alvo = min(
                             candidatos,
@@ -515,7 +541,35 @@ def update(dt):
             else:
                 # inimigo ainda está invencível, não faz nada nesse frame
                 pass
-    
+
+def atualizaTiroInimigo (dt):
+    global hero_pos_x, hero_pos_y, life, InvencibleP, InvencibleP_actualTime, death
+    for tiro in enemyProjectiles[:]:
+        tiro['x'] += tiro['velX'] * dt
+        tiro['y'] += tiro['velY'] * dt
+        
+        tiro_rect = pygame.Rect(tiro["x"], tiro["y"], 5, 5)
+        if tiro_rect.colliderect(collider_jogador):
+            if not InvencibleP:
+                life -= 1
+                InvencibleP = True
+                InvencibleP_actualTime = 0
+                enemyProjectiles.remove(tiro)
+                pygame.mixer.Sound.play(somDamage)
+                if life <= 0:
+                    death = True
+                    pygame.mixer_music.stop()
+                    pygame.mixer_music.unload()
+                    pygame.mixer_music.load("Pinguim no Gelo.mp3")
+                    pygame.mixer_music.play(-1)
+                    pygame.mixer_music.set_volume(0.1)
+            else:
+                enemyProjectiles.remove(tiro)
+
+        if tiro['x'] < -10 or tiro['x'] > width + 10 or tiro['y'] < -10 or tiro['y'] > height + 10:
+            enemyProjectiles.remove(tiro)
+
+def atualizaOrbital(dt):
     for orb in orbitals:
         # avança ângulo
         orb["angle"] += orb["speed"] * dt
@@ -531,7 +585,7 @@ def update(dt):
                             orb["size"], orb["size"])
 
         # colisão com inimigos (sem destruir a bala)
-        for enemy in enemiesMelee[:]:
+        for enemy in enemiesGlobal[:]:
             enemy_rect = pygame.Rect(enemy['posX'], enemy['posY'], 20, 20)
             if orb_rect.colliderect(enemy_rect) and not enemy['invencibility']:
                 pygame.mixer.Sound.play(somSnowballArrive)
@@ -544,7 +598,7 @@ def update(dt):
                 })
                 enemy['invencibility'] = True
                 enemy['invencibility_actualTime'] = 0
-    
+            
 def draw_screen(screen):
     screen.fill((150,200,250))
     if not death:
@@ -553,11 +607,16 @@ def draw_screen(screen):
             screen.blit(hero_idle[hero_idle_frame], (hero_pos_x-8, hero_pos_y-8))
         else:
             screen.blit(hero_walking[hero_walking_frame],(hero_pos_x-8, hero_pos_y-8))
-        for enemy in enemiesMelee:
+        for enemy in enemiesGlobal:
             collider_enemy = pygame.Rect(enemy['posX'], enemy['posY'], 20,20)
-            pygame.draw.rect(screen,("#ff0000"), collider_enemy)
+            if enemy in enemiesRanged:
+                screen.blit(nave_inimiga, (enemy['posX']-13, enemy['posY']-17))
+            else:
+                screen.blit(alien_inimigo, (enemy['posX']-5, enemy['posY']-7))
         for tiro in projectiles:
             pygame.draw.circle(screen, "#ffffff", (tiro["x"], tiro["y"]), 5)
+        for tiro in enemyProjectiles:
+            pygame.draw.circle(screen,"#ff0000",(tiro["x"], tiro["y"]), 4)
         fonteDamage = pygame.font.SysFont(None, 20)
         for pop in collisions:
             txt = fonteDamage.render(str(pop["dmg"]), True, "#ffffff")
@@ -690,11 +749,9 @@ def main_loop(screen):
                         shoot_damage = 10
                         xp = 0
                         xp_necessario = 5
-                        nivel = 1
                         circleDamage = 0
                         circleRadius = 0
                         shoot_rate = 2000
-                        enemyDeathCount = 0
                         bounce = 1
                         InvencibleP = False
                         for arma in weapons:
@@ -706,6 +763,8 @@ def main_loop(screen):
                             pygame.mixer_music.play(-1)
                             pygame.mixer_music.set_volume(0.1)
                             death = False
+                            nivel = 1
+                            enemyDeathCount = 0
                         if e.key == pygame.K_m:
                             noMenu = True
                             pygame.mixer_music.stop()
@@ -714,19 +773,31 @@ def main_loop(screen):
                             pygame.mixer_music.play(-1)
                             pygame.mixer_music.set_volume(0.1)
                             death = False
+                            nivel = 1
+                            enemyDeathCount = 0
 
             if death == True:
                 spawnMelee_timer = 0
-                for enemy in enemiesMelee:
-                    enemiesMelee.remove(enemy)
+                for enemy in enemiesGlobal:
+                    enemiesGlobal.remove(enemy)
                 for pop in collisions:
                     collisions.remove(pop)
+                for enemy in enemiesRanged:
+                    enemiesRanged.remove(enemy)
 
             # Atualiza posição dos objetos
             if not paused and not death:
                 movimentacao_player(dt)
                 cronometrador(dt)
-                update(dt)
+                invencibilidadeJogador(dt)
+                funcionamentoMelee(dt)
+                funcionamentoInimigos(dt)
+                funcionamentoRanged(dt)
+                danoNaTela (dt)
+                atira (dt)
+                atualizaTiro (dt)
+                atualizaOrbital(dt)
+                atualizaTiroInimigo(dt)
             # Desenha objetos
             draw_screen(screen)
             if paused and not death and not escolhendo_habilidade:
