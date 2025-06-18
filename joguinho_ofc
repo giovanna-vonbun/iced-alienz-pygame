@@ -190,7 +190,7 @@ def shoot(dx, dy):
     projectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -208,8 +208,8 @@ def load():
         else:
             hero_walking.append(pygame.transform.scale(pygame.image.load("pinguimWalk" + str(i//2) + ".png"),(48,48)))
     damage = pygame.image.load('damage.png')
-    orbitImage = pygame.transform.scale(pygame.image.load('orbitAbility.png'), (32,32))
-    lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility.png'),(32,32))
+    orbitImage = pygame.transform.scale(pygame.image.load('orbitAbility.png'), (120,120))
+    lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility2.png'),(120,120))
     menu = pygame.image.load('menu_icedalienz3.png')
     telaPause = pygame.transform.scale(pygame.image.load('pause_icedalienz.png'),(800,600))
     pygame.mixer_music.load("Flocos no Silêncio.mp3")
@@ -222,7 +222,7 @@ def load():
     pygame.mixer.Sound.set_volume(SomLvlUp,0.1)
     somDamage = pygame.mixer.Sound('Damage.mp3')
     pygame.mixer.Sound.set_volume(somDamage,0.1)
-    
+    cartaHabilidade = pygame.image.load('abilityCard.png')
 
 def movimentacao_player (dt):
     global hero_pos_x, hero_pos_y, hero_vel, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame, moving
@@ -525,15 +525,18 @@ def draw_screen(screen):
                 x = 0
 
         if escolhendo_habilidade:
-            font = pygame.font.SysFont(None, 32)
+            font = pygame.font.SysFont(None, 15)
+            screen.blit(cartaHabilidade,(100,100))
+            screen.blit(cartaHabilidade,(325,100))
+            screen.blit(cartaHabilidade,(550,100))
             for i, arma in enumerate(opcoes_sorteadas):
-                txt = f"{i+1}. {arma[0]} (nível atual: {arma[1]})"
+                txt = f"{arma[0]}"#(nível atual: {arma[1]})"
                 rendered = font.render(txt, True, "#ffffff")
-                screen.blit(rendered, (100, 200 + i * 40))
+                screen.blit(rendered, (118+225*i, 244))
                 if arma[0] == 'Vida':
-                    screen.blit(lifeImage,(60,195 + i * 40))
+                    screen.blit(lifeImage,(115+225*i,113))
                 elif arma[0] == 'Bola de Neve Orbital':
-                    screen.blit(orbitImage,(60,195+i*40))
+                    screen.blit(orbitImage,(115+225*i,113))
             
             
     else:
@@ -602,56 +605,42 @@ def main_loop(screen):
                             paused = False
 
                     if death == True:
+                        spawn_timer = 0
+                        life = 6
+                        hero_pos_x = 376
+                        hero_pos_y = 276
+                        hero_vel = 0.2
+                        orbital_level = 0
+                        rebuild_orbitals()
+                        velOrb = 0.001
+                        time = 0
+                        shoot_damage = 10
+                        xp = 0
+                        xp_necessario = 5
+                        nivel = 1
+                        circleDamage = 0
+                        circleRadius = 0
+                        shoot_rate = 2000
+                        enemyDeathCount = 0
+                        bounce = 1
+                        InvencibleP = False
+                        for arma in weapons:
+                            arma[1] = 0
                         if e.key == pygame.K_SPACE:
-                            spawn_timer = 0
-                            life = 6
-                            hero_pos_x = 376
-                            hero_pos_y = 276
-                            hero_vel = 0.2
-                            orbital_level = 0
-                            rebuild_orbitals()
-                            velOrb = 0.001
-                            time = 0
-                            shoot_damage = 10
-                            xp = 0
-                            xp_necessario = 5
-                            nivel = 1
-                            circleDamage = 0
-                            circleRadius = 0
-                            shoot_rate = 2000
-                            enemyDeathCount = 0
-                            bounce = 1
-                            death = False
-                            InvencibleP = False
-                        if e.key == pygame.K_m:
-                            noMenu = True
-                            spawn_timer = 0
-                            life = 6
-                            hero_pos_x = 376
-                            hero_pos_y = 276
-                            hero_vel = 0.2
-                            orbital_level = 0
-                            rebuild_orbitals()
-                            velOrb = 0.001
-                            time = 0
-                            shoot_damage = 10
-                            xp = 0
-                            xp_necessario = 5
-                            nivel = 1
-                            circleDamage = 0
-                            circleRadius = 0
-                            shoot_rate = 2000
-                            enemyDeathCount = 0
-                            bounce = 1
-                            death = False
-                            InvencibleP = False
-                            for arma in weapons:
-                                arma[1] = 0
                             pygame.mixer_music.stop()
                             pygame.mixer_music.unload()
                             pygame.mixer_music.load("Aventuras Congelantes do Pinguim Atirador.mp3")
                             pygame.mixer_music.play(-1)
                             pygame.mixer_music.set_volume(0.1)
+                            death = False
+                        if e.key == pygame.K_m:
+                            noMenu = True
+                            pygame.mixer_music.stop()
+                            pygame.mixer_music.unload()
+                            pygame.mixer_music.load("Flocos no Silêncio.mp3")
+                            pygame.mixer_music.play(-1)
+                            pygame.mixer_music.set_volume(0.1)
+                            death = False
 
             if death == True:
                 spawn_timer = 0
