@@ -39,7 +39,7 @@ InvencibleP = False
 InvencibleP_actualTime = 0
 InvencibleP_lengt = 1000
 InvencibleE_lengt = 250
-life = 6
+life = 1
 enemyDeathCount = 0
 nivel = 1
 xp = 0
@@ -247,7 +247,7 @@ def enemyShoot (enemyPosX, enemyPosY):
     enemyProjectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade, nave_inimiga, damageUpgradeImage, elasticImage
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade, nave_inimiga, damageUpgradeImage, elasticImage, background, telaMorte, telaTransp
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -288,6 +288,9 @@ def load():
     pygame.mixer.Sound.set_volume(somDamage,0.1)
     cartaHabilidade = pygame.image.load('icedalienzoverlay.png')
     nave_inimiga = pygame.transform.scale(pygame.image.load('nave_icedalienz.png'),(48,48))
+    background = pygame.image.load('BackgroundIcedAlienz2.jpg')
+    telaMorte = pygame.image.load('telaMorte.jpg')
+    telaTransp = pygame.image.load('telaTransp.png')
 
 def movimentacao_player (dt):
     global hero_pos_x, hero_pos_y, hero_vel, hero_idle_time, hero_idle_frame, hero_walking_time, hero_walking_frame, moving
@@ -613,7 +616,8 @@ def atualizaOrbital(dt):
                 enemy['invencibility_actualTime'] = 0
             
 def draw_screen(screen):
-    screen.fill((150,200,250))
+    screen.fill(("#D5E8F2"))
+    screen.blit(background,(-192,-36))
     if not death:
         pygame.draw.circle(screen,("#70aaff"),(hero_pos_x+16,hero_pos_y+16),circleRadius)
         if not moving:
@@ -688,26 +692,26 @@ def draw_screen(screen):
                     screen.blit(elasticImage,(85+225*i,185))
 
     else:
-        screen.blit(damage,(0,0))
+        screen.blit(telaMorte,(-192,-36))
+        screen.blit(telaTransp,(0,0))
         fontedeath = pygame.font.SysFont(None, 100)
-        texto = fontedeath.render('VOCÊ MORREU!', True, "#271BD5")
-        screen.blit(texto, (120, 250))
+        texto = fontedeath.render('VOCÊ MORREU!', True, "#54FEFD")
+        screen.blit(texto, (120, 95))
         fonteenemiesMelee = pygame.font.SysFont(None, 25)
         textoenemiesMelee2 = fonteenemiesMelee.render(f'Inimigos eliminados: {enemyDeathCount}', True, "#ffffff")
-        screen.blit(textoenemiesMelee2,(500,375))
+        screen.blit(textoenemiesMelee2,(500,250))
         fonteCron = pygame.font.SysFont(None, 25)
         textoCron = fonteCron.render(f'Tempo sobrevivido: {cronometro}',True,"#ffffff")
-        screen.blit(textoCron,(270,375))
+        screen.blit(textoCron,(270,250))
         fonteNivel = pygame.font.SysFont(None,25)
         textoNivel = fonteNivel.render(f'Nível alcançado: {nivel}', True, "#ffffff")
-        screen.blit(textoNivel,(90,375))
+        screen.blit(textoNivel,(90,250))
         fonteRejogar = pygame.font.SysFont(None,40)
         textoRejogar = fonteRejogar.render('Pressione Espaço para Rejogar', True, "#ffffff")
-        screen.blit(textoRejogar,(180,450))
+        screen.blit(textoRejogar,(180,540))
         fonteVoltarMenu = pygame.font.SysFont(None,30)
         textoVoltarMenu = fonteVoltarMenu.render('Pressione m para voltar ao menu', True, "#ffffff")
-        screen.blit(textoRejogar,(180,450))
-        screen.blit(textoVoltarMenu,(180,480))
+        screen.blit(textoVoltarMenu,(180,570))
 
 def draw_pause_overlay(screen):
     screen.blit(telaPause,(0,0))
