@@ -654,7 +654,7 @@ def draw_screen(screen):
         killCountTxt = fonteKillCount.render(f'Inimigos Mortos: {enemyDeathCount}', True, '#ffffff')
         screen.blit(killCountTxt, (660,0))
         pygame.draw.rect(screen,("#999999"),(0,575,800,600))
-        pygame.draw.rect(screen,("#0000ff"),(0,575,(xp/xp_necessario*800),600))
+        pygame.draw.rect(screen,("#1070cc"),(0,575,(xp/xp_necessario*800),600))
         fonteXP = pygame.font.SysFont(None, 20)
         xpTxt = fonteXP.render(f'Nível: {nivel}', True, '#ffffff')
         screen.blit(xpTxt, (375, 580))
