@@ -39,7 +39,7 @@ InvencibleP = False
 InvencibleP_actualTime = 0
 InvencibleP_lengt = 1000
 InvencibleE_lengt = 250
-life = 1
+life = 6
 enemyDeathCount = 0
 nivel = 1
 xp = 0
@@ -247,7 +247,7 @@ def enemyShoot (enemyPosX, enemyPosY):
     enemyProjectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade, nave_inimiga, damageUpgradeImage, elasticImage, background, telaMorte, telaTransp
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade, nave_inimiga, damageUpgradeImage, elasticImage, background, telaMorte, telaTransp, speedUpgradeImage, recargaUpgradeImage,lagrimasUpgradeImage
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -274,6 +274,9 @@ def load():
     lifeImage = pygame.transform.scale(pygame.image.load('lifeAbility2.png'),(120,120))
     elasticImage = pygame.transform.scale(pygame.image.load('icedalienz_bolaelastica.png'),(200,200))
     damageUpgradeImage =  pygame.transform.scale(pygame.image.load('icedalienz_nevepoderosa.png'),(300,300))
+    speedUpgradeImage = pygame.transform.scale(pygame.image.load('velocidade_icedalienz.png'),(480,480))
+    lagrimasUpgradeImage = pygame.transform.scale(pygame.image.load('icedalienz_lagrima.png'),(300,300))
+    recargaUpgradeImage = pygame.transform.scale(pygame.image.load('icedalienz_recarga.png'),(300,300))
     menu = pygame.image.load('menu_icedalienz3.png')
     telaPause = pygame.transform.scale(pygame.image.load('pause_icedalienz.png'),(800,600))
     pygame.mixer_music.load("Flocos no Silêncio.mp3")
@@ -680,7 +683,7 @@ def draw_screen(screen):
             screen.blit(cartaHabilidade,(550,225))
             for i, arma in enumerate(opcoes_sorteadas):
                 txt = f"{arma[0]}"#(nível atual: {arma[1]})"
-                rendered = font.render(txt, True, "#CAF0F8")
+                rendered = font.render(txt, True, "#000000")
                 screen.blit(rendered, (118+225*i, 380))
                 if arma[0] == 'Vida':
                     screen.blit(lifeImage,(115+225*i,238))
@@ -690,6 +693,12 @@ def draw_screen(screen):
                     screen.blit(damageUpgradeImage,(50+225*i,140))
                 elif arma[0] == 'Bola de Neve Elástica':
                     screen.blit(elasticImage,(85+225*i,185))
+                elif arma[0] == 'Lágrimas de Pinguim':
+                    screen.blit(lagrimasUpgradeImage,(35+225*i,150))
+                elif arma[0] == 'Velocidade Movimento':
+                    screen.blit(speedUpgradeImage,(225*i-80,80))
+                elif arma[0] == 'Recarga Bola de Neve':
+                    screen.blit(recargaUpgradeImage,(25+225*i,150))
 
     else:
         screen.blit(telaMorte,(-192,-36))
