@@ -45,7 +45,7 @@ nivel = 1
 xp = 0
 bounce = 1
 opcoes_sorteadas = []
-circleDamage = 0
+circleDamage = 1
 circleRadius = 0
 escolhendo_habilidade = False
 weapons = [
@@ -100,7 +100,7 @@ def selecionaArma (arma):
     elif arma[0] == 'Bola de Neve Elástica':
         bounce += 1
     elif arma[0] == 'Bola de Neve Poderosa':
-        shoot_damage += 2
+        shoot_damage += 4
     elif arma[0] == 'Bola de Neve Orbital':
         orbital_level += 1
         velOrb += 0.0005
@@ -255,7 +255,7 @@ def load():
         pygame.Rect(800,0,810,600),
         pygame.Rect(0,600,800,610)
     ]
-    coracao = pygame.image.load('coracao.png')
+    coracao = pygame.transform.scale(pygame.image.load('coracao2.png'),(13,26))
     
     for i in range(1, 3):
         hero_idle.append(pygame.transform.scale(pygame.image.load("pinguimNovoIdle" + str(i) + ".png"),(80,80)))
@@ -292,7 +292,7 @@ def load():
     cartaHabilidade = pygame.image.load('icedalienzoverlay.png')
     nave_inimiga = pygame.transform.scale(pygame.image.load('nave_icedalienz.png'),(48,48))
     background = pygame.image.load('BackgroundIcedAlienz2.jpg')
-    telaMorte = pygame.image.load('telaMorte.jpg')
+    telaMorte = pygame.transform.scale(pygame.image.load('telaMorte.png'),(1200,600))
     telaTransp = pygame.image.load('telaTransp.png')
 
 def movimentacao_player (dt):
@@ -637,7 +637,7 @@ def draw_screen(screen):
             pygame.draw.circle(screen, "#ffffff", (tiro["x"], tiro["y"]), 5)
         for tiro in enemyProjectiles:
             pygame.draw.circle(screen,"#ff0000",(tiro["x"], tiro["y"]), 4)
-        fonteDamage = pygame.font.SysFont(None, 20)
+        fonteDamage = pygame.font.Font('Pixeled.ttf' , 10)
         for pop in collisions:
             txt = fonteDamage.render(str(pop["dmg"]), True, "#ffffff")
             screen.blit(txt, (pop["x"], pop["y"]))
@@ -650,17 +650,17 @@ def draw_screen(screen):
                                         5)
         if InvencibleP and InvencibleP_actualTime < 500 and not justUpgraded:
             screen.blit(damage,(0,0))
-        fonteCronometro = pygame.font.SysFont(None, 30)
-        cronometroTxt = fonteCronometro.render(cronometro, True, '#ffffff')
-        screen.blit(cronometroTxt, (370,0))
-        fonteKillCount = pygame.font.SysFont(None,20)
+        fonteCronometro = pygame.font.Font('Pixeled.ttf', 15)
+        cronometroTxt = fonteCronometro.render(cronometro, True, "#ffffff")
+        screen.blit(cronometroTxt, (350,0))
+        fonteKillCount = pygame.font.Font('Pixeled.ttf',8)
         killCountTxt = fonteKillCount.render(f'Inimigos Mortos: {enemyDeathCount}', True, '#ffffff')
-        screen.blit(killCountTxt, (660,0))
         pygame.draw.rect(screen,("#999999"),(0,575,800,600))
         pygame.draw.rect(screen,("#1070cc"),(0,575,(xp/xp_necessario*800),600))
-        fonteXP = pygame.font.SysFont(None, 20)
+        fonteXP = pygame.font.Font('Pixeled.ttf', 10)
         xpTxt = fonteXP.render(f'Nível: {nivel}', True, '#ffffff')
-        screen.blit(xpTxt, (375, 580))
+        screen.blit(xpTxt, (375, 570))
+        screen.blit(killCountTxt, (660,575))
         x = 0
         y = 0
         p = 0
@@ -678,49 +678,55 @@ def draw_screen(screen):
 
         if escolhendo_habilidade:
             font = pygame.font.SysFont(None, 15)
-            screen.blit(cartaHabilidade,(100,225))
-            screen.blit(cartaHabilidade,(325,225))
-            screen.blit(cartaHabilidade,(550,225))
+            font2 = pygame.font.SysFont(None, 20)
+            for i in range (1,4):
+                texto = f'Habilidade {i}'
+                texto2 = font2.render(texto, True, "#ffffff")
+                screen.blit(texto2,(135+225*(i-1),420))
+                screen.blit(cartaHabilidade,(100+225*(i-1),225-15))
             for i, arma in enumerate(opcoes_sorteadas):
-                txt = f"{arma[0]}"#(nível atual: {arma[1]})"
-                rendered = font.render(txt, True, "#000000")
-                screen.blit(rendered, (118+225*i, 380))
+                nomeArma = f"{arma[0]}"
+                nivelArma = f'nível atual: {arma[1]}'
+                textoNomeArma = font.render(nomeArma, True, "#000000")
+                textoNivelArma = font.render(nivelArma, True, "#ffffff")
+                screen.blit(textoNomeArma, (118+225*i, 380-15))
+                screen.blit(textoNivelArma,(140+225*i,410-15))
                 if arma[0] == 'Vida':
-                    screen.blit(lifeImage,(115+225*i,238))
+                    screen.blit(lifeImage,(115+225*i,238-15))
                 elif arma[0] == 'Bola de Neve Orbital':
-                    screen.blit(orbitImage,(115+225*i,238))
+                    screen.blit(orbitImage,(115+225*i,238-15))
                 elif arma[0] == 'Bola de Neve Poderosa':
-                    screen.blit(damageUpgradeImage,(50+225*i,140))
+                    screen.blit(damageUpgradeImage,(50+225*i,140-15))
                 elif arma[0] == 'Bola de Neve Elástica':
-                    screen.blit(elasticImage,(85+225*i,185))
+                    screen.blit(elasticImage,(85+225*i,185-15))
                 elif arma[0] == 'Lágrimas de Pinguim':
-                    screen.blit(lagrimasUpgradeImage,(35+225*i,150))
+                    screen.blit(lagrimasUpgradeImage,(35+225*i,150-15))
                 elif arma[0] == 'Velocidade Movimento':
-                    screen.blit(speedUpgradeImage,(225*i-80,80))
+                    screen.blit(speedUpgradeImage,(225*i-80,80-15))
                 elif arma[0] == 'Recarga Bola de Neve':
-                    screen.blit(recargaUpgradeImage,(25+225*i,150))
+                    screen.blit(recargaUpgradeImage,(25+225*i,150-15))
 
     else:
-        screen.blit(telaMorte,(-192,-36))
+        screen.blit(telaMorte,(-200,0))
         screen.blit(telaTransp,(0,0))
-        fontedeath = pygame.font.SysFont(None, 100)
-        texto = fontedeath.render('VOCÊ MORREU!', True, "#54FEFD")
-        screen.blit(texto, (120, 95))
-        fonteenemiesMelee = pygame.font.SysFont(None, 25)
+        fontedeath = pygame.font.Font('Pixeled.ttf', 40)
+        texto = fontedeath.render('VOCÊ FOI ABDUZIDO!', True, "#54FEFD")
+        screen.blit(texto, (100, 95))
+        fonteenemiesMelee = pygame.font.Font('Pixeled.ttf', 10)
         textoenemiesMelee2 = fonteenemiesMelee.render(f'Inimigos eliminados: {enemyDeathCount}', True, "#ffffff")
-        screen.blit(textoenemiesMelee2,(500,250))
-        fonteCron = pygame.font.SysFont(None, 25)
+        screen.blit(textoenemiesMelee2,(520,250))
+        fonteCron = pygame.font.Font('Pixeled.ttf', 10)
         textoCron = fonteCron.render(f'Tempo sobrevivido: {cronometro}',True,"#ffffff")
-        screen.blit(textoCron,(270,250))
-        fonteNivel = pygame.font.SysFont(None,25)
+        screen.blit(textoCron,(290,250))
+        fonteNivel = pygame.font.Font('Pixeled.ttf',10)
         textoNivel = fonteNivel.render(f'Nível alcançado: {nivel}', True, "#ffffff")
-        screen.blit(textoNivel,(90,250))
-        fonteRejogar = pygame.font.SysFont(None,40)
-        textoRejogar = fonteRejogar.render('Pressione Espaço para Rejogar', True, "#ffffff")
-        screen.blit(textoRejogar,(180,540))
-        fonteVoltarMenu = pygame.font.SysFont(None,30)
+        screen.blit(textoNivel,(110,250))
+        fonteRejogar = pygame.font.Font('Pixeled.ttf',10)
+        textoRejogar = fonteRejogar.render('Pressione Espaço para jogar novamente', True, "#ffffff")
+        screen.blit(textoRejogar,(235,540))
+        fonteVoltarMenu = pygame.font.Font('Pixeled.ttf',10)
         textoVoltarMenu = fonteVoltarMenu.render('Pressione m para voltar ao menu', True, "#ffffff")
-        screen.blit(textoVoltarMenu,(180,570))
+        screen.blit(textoVoltarMenu,(255,570))
 
 def draw_pause_overlay(screen):
     screen.blit(telaPause,(0,0))
@@ -752,15 +758,15 @@ def main_loop(screen):
                         paused = True
                         InvencibleP = True
                         justUpgraded = True
-                        if e.key == pygame.K_1:
+                        if e.key == pygame.K_1 or (e.type == pygame.MOUSEBUTTONDOWN and 100 < posX_mouse < 250 and 210 < posY_mouse < 410):
                             selecionaArma(opcoes_sorteadas[0])
                             escolhendo_habilidade = False
                             paused = False
-                        elif e.key == pygame.K_2:
+                        elif e.key == pygame.K_2 or (e.type == pygame.MOUSEBUTTONDOWN and 325 < posX_mouse < 475 and 210 < posY_mouse < 410):
                             selecionaArma(opcoes_sorteadas[1])
                             escolhendo_habilidade = False
                             paused = False
-                        elif e.key == pygame.K_3:
+                        elif e.key == pygame.K_3 or (e.type == pygame.MOUSEBUTTONDOWN and 550 < posX_mouse < 700 and 210 < posY_mouse < 410):
                             selecionaArma(opcoes_sorteadas[2])
                             escolhendo_habilidade = False
                             paused = False
@@ -804,6 +810,22 @@ def main_loop(screen):
                             death = False
                             nivel = 1
                             enemyDeathCount = 0
+
+                posX_mouse, posY_mouse = pygame.mouse.get_pos()
+                if e.type == pygame.MOUSEBUTTONDOWN:  
+                    if escolhendo_habilidade:     
+                        if 100 < posX_mouse < 250 and 210 < posY_mouse < 410:
+                            selecionaArma(opcoes_sorteadas[0])
+                            escolhendo_habilidade = False
+                            paused = False
+                        elif 325 < posX_mouse < 475 and 210 < posY_mouse < 410:
+                            selecionaArma(opcoes_sorteadas[0])
+                            escolhendo_habilidade = False
+                            paused = False
+                        elif 550 < posX_mouse < 700 and 210 < posY_mouse < 410:
+                            selecionaArma(opcoes_sorteadas[0])
+                            escolhendo_habilidade = False
+                            paused = False
 
             if death == True:
                 spawnMelee_timer = 0
