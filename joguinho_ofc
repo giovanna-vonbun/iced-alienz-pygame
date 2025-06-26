@@ -247,7 +247,7 @@ def enemyShoot (enemyPosX, enemyPosY):
     enemyProjectiles.append(tiro)
 
 def load():
-    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, somSnowballLaunch, SomLvlUp, somDamage, cartaHabilidade, nave_inimiga, damageUpgradeImage, elasticImage, background, telaMorte, telaTransp, speedUpgradeImage, recargaUpgradeImage,lagrimasUpgradeImage
+    global clock, collider_jogador, collider_mapa, coracao, damage, orbitImage, lifeImage, menu, telaPause, somSnowballArrive, SomLvlUp, somDamage, cartaHabilidade, nave_inimiga, damageUpgradeImage, elasticImage, background, telaMorte, telaTransp, speedUpgradeImage, recargaUpgradeImage,lagrimasUpgradeImage
     clock = pygame.time.Clock() 
     collider_mapa = [
         pygame.Rect(0,0,-10,600),
@@ -280,7 +280,6 @@ def load():
     menu = pygame.image.load('menu_icedalienz3.png')
     telaPause = pygame.transform.scale(pygame.image.load('pause_icedalienz.png'),(800,600))
     pygame.mixer_music.load("Flocos no Silêncio.mp3")
-    somSnowballLaunch = pygame.mixer.Sound('BolaDeNeveLancamento.ogg')
     somSnowballArrive = pygame.mixer.Sound('Hit2.mp3')
     pygame.mixer.Sound.set_volume(somSnowballArrive,0.1)
     pygame.mixer.music.play(-1)
@@ -501,7 +500,6 @@ def atira (dt):
     shoot_time += dt
     if shoot_time >= shoot_rate and inimigoMaisProx:
         shoot()
-        #pygame.mixer.Sound.play(somSnowballLaunch)
         shoot_time = 0
 
 def atualizaTiro (dt):
