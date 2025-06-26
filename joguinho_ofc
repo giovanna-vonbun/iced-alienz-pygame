@@ -819,11 +819,11 @@ def main_loop(screen):
                             escolhendo_habilidade = False
                             paused = False
                         elif 325 < posX_mouse < 475 and 210 < posY_mouse < 410:
-                            selecionaArma(opcoes_sorteadas[0])
+                            selecionaArma(opcoes_sorteadas[1])
                             escolhendo_habilidade = False
                             paused = False
                         elif 550 < posX_mouse < 700 and 210 < posY_mouse < 410:
-                            selecionaArma(opcoes_sorteadas[0])
+                            selecionaArma(opcoes_sorteadas[2])
                             escolhendo_habilidade = False
                             paused = False
 
