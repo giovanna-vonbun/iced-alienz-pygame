@@ -4,6 +4,12 @@ Jogo desenvolvido em Python utilizando Pygame como parte dos meus estudos em pro
 
 Este projeto foi criado com foco em aprender estruturas de game loop, eventos, colisões e organização de código.
 
+Projeto desenvolvido em equipe durante disciplina da PUC-Rio.
+
+## Gênero 
+
+Vampire Survivors-like  
+
 ## Tecnologias
 
 - Python  
