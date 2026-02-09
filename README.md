@@ -1,6 +1,6 @@
 # Pygame 'Iced Alienz' Game Project
 
-Jogo desenvolvido em Python utilizando Pygame como parte dos meus estudos em programação, lógica e desenvolvimento de jogos.
+Jogo desenvolvido em Python utilizando Pygame como parte de estudos em programação, lógica e desenvolvimento de jogos.
 
 Este projeto foi criado com foco em aprender estruturas de game loop, eventos, colisões e organização de código.
 
